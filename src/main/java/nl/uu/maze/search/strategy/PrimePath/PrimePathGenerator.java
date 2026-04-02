@@ -4,10 +4,12 @@ import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.model.SootMethod;
 import java.util.ArrayList;
+import java.util.List;
 
 import sootup.core.jimple.common.stmt.Stmt;
 
 public class PrimePathGenerator {
+    /** Generate all prime paths in a CFG */
     public static <V extends BasicBlock<V>> ArrayList<ArrayList<Stmt>> GeneratePaths(StmtGraph<V> cfg){
         var paths = new ArrayList<ArrayList<Stmt>>();
         // initialize path list
@@ -36,6 +38,7 @@ public class PrimePathGenerator {
         for (int i = 0; i < paths.size(); i++) {
             for (int j = 0; j < paths.size(); j++) {
                 if (i == j) continue;
+                // TODO: replace with postfix tree
                 if (is_postfix(paths.get(i), paths.get(j))) {
                     paths.remove(i);
                     i--;
@@ -47,14 +50,14 @@ public class PrimePathGenerator {
         return paths;
     }
 
-    // Extend path by following outgoing edges, adds the new paths into buffer
-    // returns true iff new paths were added
-    static boolean extend_path(ArrayList<Stmt> path, ArrayList<ArrayList<Stmt>> buffer, StmtGraph cfg) {
+    /** Extend path by following outgoing edges, adds the new paths into buffer
+      * returns true iff new paths were added */
+    static <V extends BasicBlock<V>> boolean extend_path(ArrayList<Stmt> path, ArrayList<ArrayList<Stmt>> buffer, StmtGraph<V> cfg) {
         var added_new_paths = false;
-        var successors = cfg.getAllSuccessors(path.getLast());
-        for (var successor: successors) {
-            if (can_add_node(path, (Stmt)successor)){
-                var path_copy = (ArrayList)path.clone();
+        List<Stmt> successors = cfg.getAllSuccessors(path.getLast());
+        for (Stmt successor: successors) {
+            if (can_add_node(path, successor)){
+                var path_copy = new ArrayList<Stmt>(path);
                 path_copy.add(successor);
                 buffer.add(path_copy);
                 added_new_paths = true;
@@ -63,8 +66,8 @@ public class PrimePathGenerator {
         return added_new_paths;
     }
 
-    // checks if path still remains a simple path or loop after adding a new node
-    // assumes path is currently simple path or loop already
+    /** checks if path still remains a simple path or loop after adding a new node
+    * assumes path is currently simple path or loop already */
     static boolean can_add_node(ArrayList<Stmt> path, Stmt new_node) {
         // start at second element, because first element is allowed to be the same as that would be a simple loop
         for (int i = 1; i < path.size(); i++) {
@@ -73,7 +76,7 @@ public class PrimePathGenerator {
         return true;
     }
 
-    // returns true iff path1 is a postfix of path2
+    /** returns true iff path1 is a postfix of path2 */
     static boolean is_postfix (ArrayList<Stmt> path1, ArrayList<Stmt> path2) {
         if (path1.size() > path2.size()) return false;
         for (int i = 0; i < path1.size(); i++) {

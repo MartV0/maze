@@ -102,6 +102,7 @@ public class SearchStrategyFactory {
                     SearchHeuristicFactory.createHeuristics(
                             List.of("QueryCost", "SmallestDepth"),
                             List.of(0.7, 0.3)));
+            case "PrimePath", "PrimePathSearch", "PP" -> new PrimePathStrategy<>();
             default -> {
                 logger.warn("Unknown symbolic search strategy: {}, defaulting to DFS", name);
                 yield new DFS<>();
@@ -121,6 +122,7 @@ public class SearchStrategyFactory {
         UniformRandom, UniformRandomSearch, URS,
         CoverageOptimized, CoverageOptimizedSearch, COS,
         FeasibilityOptimized, FeasibilityOptimizedSearch, FOS,
-        RandomPath, RandomPathSearch, RPS
+        RandomPath, RandomPathSearch, RPS,
+        PrimePath, PrimePathSearch, PP
     }
 }

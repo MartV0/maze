@@ -15,6 +15,7 @@ import nl.uu.maze.util.Z3ContextProvider;
 import nl.uu.maze.util.Z3Sorts;
 import nl.uu.maze.execution.symbolic.PathConstraint.SingleConstraint;
 import nl.uu.maze.search.SearchTarget;
+import nl.uu.maze.util.BranchHistory;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.basic.Immediate;
 import sootup.core.jimple.common.expr.AbstractInstanceInvokeExpr;
@@ -378,7 +379,7 @@ public class SymbolicState implements SearchTarget {
      * branch taken.
      */
     public void recordBranch(Stmt branchStmt, int branchIndex) {
-        int hash = branchStmt.hashCode() + 31 * branchIndex;
+        int hash = BranchHistory.ToBranchHistory(branchStmt, branchIndex);
         branchHistory.add(hash);
     }
 
