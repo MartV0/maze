@@ -285,7 +285,7 @@ public class DSEController {
                     break;
                 }
                 if (!state.isInfeasible()) {
-                    generateTestCase(state.returnToRootCaller());
+                    generateTestCase(state.returnToRootCaller(), strategy);
                 }
             }
         }
@@ -294,12 +294,13 @@ public class DSEController {
     /**
      * Generate a test case for the given method and symbolic state.
      */
-    private void generateTestCase(SymbolicState state) {
+    private void generateTestCase(SymbolicState state, SearchStrategy strategy) {
         try {
             Optional<ArgMap> argMap = validator.evaluate(state);
             if (argMap.isPresent()) {
                 generator.addMethodTestCase(state.getMethod(), ctorSoot, argMap.get());
             }
+            strategy.generatedTestCase(state);
         } catch (Exception e) {
             logger.error("Error generating test case for method {}: {}", state.getMethod().getName(), e.getMessage());
             logger.debug("Error stack trace: ", e);
@@ -365,7 +366,7 @@ public class DSEController {
                     return Optional.of(current);
                 } else if (!current.isInfeasible()) {
                     // For symblic-driven, generate test case
-                    generateTestCase(current.returnToRootCaller());
+                    generateTestCase(current.returnToRootCaller(), searchStrategy);
                 }
                 continue;
             }
@@ -384,7 +385,7 @@ public class DSEController {
                             if (concreteDriven) {
                                 return Optional.of(state);
                             } else if (!clazz.isEnum() && !state.isInfeasible()) {
-                                generateTestCase(state);
+                                generateTestCase(state, searchStrategy);
                             }
                             continue;
                         }

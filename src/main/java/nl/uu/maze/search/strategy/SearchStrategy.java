@@ -94,6 +94,10 @@ public abstract class SearchStrategy<T extends SearchTarget> {
         return false;
     }
 
+    /** Used to inform search strategy a test case was generated based on the
+     * specified symbolic state */
+    public void generatedTestCase(SymbolicState state) {}
+
     /**
      * Attempts to convert this search strategy to a symbolic-driven search
      * strategy.

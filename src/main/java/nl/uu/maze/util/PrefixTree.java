@@ -37,27 +37,82 @@ public class PrefixTree<T> {
         current.isList = true;
     }
 
-    /** checks if input is a prefix of any of the lists in the tree */
-    public boolean isPrefix(List<T> input) {
-        return isPrefix2(input, 0);
+    /** Attempts to remove input from tree
+      * returns true if the input was present in the tree, false otherwise */
+    public boolean remove(List<T> input) {
+        return remove(input, 0, root, false);
     }
 
-    /** checks if input starting from range is a prefix of any of the lists in the tree */
-    private boolean isPrefix2(List<T> input, int start_range) {
+    /** Remove lists from the tree that are sublists of input */
+    public boolean removeSublists(List<T> input) {
+        boolean res = false;
+        for(int i = 0; i < input.size(); i++) {
+            res |= remove(input, i, root, true);
+        }
+        return res;
+    }
+    
+    /** Remove input from tree
+     * also remove entries that end before end of input if sublist is set to true
+     * */
+    private boolean remove(List<T> input, int index, TrieNode node, boolean sublist) {
+        // Indicates if a list has been deleted from the tree
+        boolean deleted = false;
+        if (index == input.size() || sublist) {
+            deleted = node.isList;
+            node.isList = false;
+            if (index == input.size())
+                return deleted;
+        }
+
+        if (node.children.isEmpty())
+            return deleted;
+
+        var child = node.children.get(input.get(index));
+        if (child == null) return deleted;
+        deleted |= remove(input, index + 1, child, sublist);
+
+        // If child is not end of list, and has no children, delete it
+        if (!child.isList && child.children.isEmpty()) {
+            node.children.remove(input.get(index));
+        }
+
+        return deleted;
+    }
+
+    /** checks if input is a prefix of any of the lists in the tree */
+    public boolean isPrefix(List<T> input) {
+        return contains(input, 0, false);
+    }
+
+    /** checks if input starting from range is a prefix of any of the lists in the tree
+     *  if strict = true than function only returns true if entire list is in tree */
+    private boolean contains(List<T> input, int start_range, boolean strict) {
         TrieNode current = root;
         for (int i = start_range; i < input.size(); i++) {
             var next_node = current.children.get(input.get(i));
             if (next_node == null) {
                 return false;
             }
+            current = next_node;
         }
-        return true;
+        return strict || input.size() == start_range ? current.isList : true;
+    }
+
+    /** checks if any endings of the input are a prefix of any of the lists in the tree */
+    public boolean contains(List<T> input) {
+        return contains(input, 0, true);
+    }
+
+    /** true iff tree is empty */
+    public boolean empty() {
+        return root.children.isEmpty() && !root.isList;
     }
 
     /** checks if any endings of the input are a prefix of any of the lists in the tree */
     public boolean containsPrefix(List<T> input) {
-        for (int i = 0; i < input.size(); i++) {
-            if (isPrefix2(input, i)) {
+        for (int i = 0; i <= input.size(); i++) {
+            if (contains(input, i, false)) {
                 return true;
             }
         }

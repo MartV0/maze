@@ -62,4 +62,9 @@ public class SymbolicSearchStrategy extends SearchStrategy<SymbolicState> {
     public boolean requiresBranchHistoryData() {
         return strategy.requiresBranchHistoryData();
     }
+
+    @Override
+    public void generatedTestCase(SymbolicState state) {
+        strategy.generatedTestCase(state);
+    }
 }
