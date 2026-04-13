@@ -17,7 +17,7 @@ import sootup.core.graph.StmtGraph;
 public class PrimePathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     private final static Logger logger = LoggerFactory.getLogger(PrimePathStrategy.class);
 
-    private final Queue<T> targets = new LinkedList<>();
+    private final LinkedList<T> targets = new LinkedList<>();
     // Map from each cfg to all the prime paths for that cfg, stored as a prefix
     // tree for efficient querying
     private HashMap<StmtGraph<?>, PrefixTree<Integer>> primePaths = new HashMap<StmtGraph<?>, PrefixTree<Integer>>();
@@ -34,7 +34,8 @@ public class PrimePathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         if (!primePaths.containsKey(cfg) && target.getCallDepth() == 0) {
             var tree = new PrefixTree<Integer>();
             primePaths.put(cfg, tree);
-            for (var path: PrimePathGenerator.GeneratePaths(cfg))
+            var paths = PrimePathGenerator.GeneratePaths(cfg);
+            for (var path: paths)
             {
                 var branchhistory = BranchHistory.ConvertPathToBranchHistory(path, cfg);
                 // branchhistory could possibly generate duplicates, but the
@@ -68,7 +69,7 @@ public class PrimePathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     @Override
     public T next() {
         // Only continue searching if there is an uncovered prime path
-        if (primePaths.isEmpty()) {
+        if (primePathsEmpty()) {
             targets.clear();
             return null;
         }
@@ -82,6 +83,7 @@ public class PrimePathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             }
         }
         // If no prime paths matches any of the states fall back on BFS
+        // Needed to find beginning of any prime path, or to finish a prime path to a terminal state
         // TODO: maybe replace this with more direct search strategy (similar to distance to uncovered heuristic)?
         return targets.isEmpty() ? null : targets.remove();
     }
@@ -99,5 +101,15 @@ public class PrimePathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     @Override
     public Collection<T> getAll() {
         return targets;
+    }
+
+    /** Returns true if no more prime paths targets are present */
+    private boolean primePathsEmpty() {
+        for (var entry: primePaths.values()) {
+            if(!entry.empty()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

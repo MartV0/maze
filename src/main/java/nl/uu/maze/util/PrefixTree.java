@@ -3,14 +3,19 @@ package nl.uu.maze.util;
 import java.util.List;
 import java.util.HashMap;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  * Prefix tree data structure, also called trie, used to efficiently query if
  * a string is a prefix of a set of trees
  */
 public class PrefixTree<T> {
+    private final static Logger logger = LoggerFactory.getLogger(BranchHistory.class);
+
     private class TrieNode {
         HashMap<T, TrieNode> children;
-        // private ArrayList<T> content;
+        private List<T> content;
         
         // Indicates if the list up to this node is a full string in the original input
         private boolean isList = false;
@@ -35,6 +40,7 @@ public class PrefixTree<T> {
             current = next_node;
         }
         current.isList = true;
+        current.content = input;
     }
 
     /** Attempts to remove input from tree
@@ -61,6 +67,7 @@ public class PrefixTree<T> {
         if (index == input.size() || sublist) {
             deleted = node.isList;
             node.isList = false;
+            node.content = null;
             if (index == input.size())
                 return deleted;
         }
