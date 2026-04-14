@@ -89,14 +89,17 @@ public class PrefixTree<T> {
 
     /** checks if input is a prefix of any of the lists in the tree */
     public boolean isPrefix(List<T> input) {
-        return contains(input, 0, false);
+        return contains(input, 0, false, false);
     }
 
     /** checks if input starting from range is a prefix of any of the lists in the tree
-     *  if strict = true than function only returns true if entire list is in tree */
-    private boolean contains(List<T> input, int start_range, boolean strict) {
+     *  if strict = true than function only returns true if entire list is in tree
+     *  if sublist = true than function also returns true if a list is
+     *      a prefix of input */
+    private boolean contains(List<T> input, int start_range, boolean strict, boolean prefix) {
         TrieNode current = root;
         for (int i = start_range; i < input.size(); i++) {
+            if (prefix && current.isList) return true;
             var next_node = current.children.get(input.get(i));
             if (next_node == null) {
                 return false;
@@ -106,9 +109,9 @@ public class PrefixTree<T> {
         return strict || input.size() == start_range ? current.isList : true;
     }
 
-    /** checks if any endings of the input are a prefix of any of the lists in the tree */
+    /** checks if whole list is present in the tree */
     public boolean contains(List<T> input) {
-        return contains(input, 0, true);
+        return contains(input, 0, true, false);
     }
 
     /** true iff tree is empty */
@@ -119,7 +122,17 @@ public class PrefixTree<T> {
     /** checks if any endings of the input are a prefix of any of the lists in the tree */
     public boolean containsPrefix(List<T> input) {
         for (int i = 0; i <= input.size(); i++) {
-            if (contains(input, i, false)) {
+            if (contains(input, i, false, false)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Checks if any list in the tree is contained in input */
+    public boolean containsSublist(List<T> input) {
+        for (int i = 0; i <= input.size(); i++) {
+            if (contains(input, i, true, true)) {
                 return true;
             }
         }

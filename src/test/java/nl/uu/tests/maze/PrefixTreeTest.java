@@ -172,4 +172,54 @@ class PrefixTreeTest {
         assertFalse(tree.contains(list4));
         assertFalse(tree.contains(list5));
     }
+
+    @Test
+    void testContains() {
+        PrefixTree<Integer> tree = new PrefixTree<Integer>();
+        var list1 = new ArrayList<Integer>();
+        list1.add(1);
+        list1.add(2);
+        list1.add(3);
+        list1.add(4);
+        list1.add(5);
+        tree.insert(list1);
+        var list2 = new ArrayList<Integer>();
+        list2.add(1);
+        list2.add(2);
+        list2.add(8);
+        list2.add(9);
+        list2.add(10);
+        tree.insert(list2);
+        var list3 = new ArrayList<Integer>();
+        list3.add(1);
+        list3.add(2);
+        list3.add(8);
+        list3.add(12);
+        list3.add(13);
+        tree.insert(list3);
+
+        var prefix1 = new ArrayList<Integer>();
+        prefix1.add(-55);
+        prefix1.add(-55);
+        prefix1.add(1);
+        prefix1.add(2);
+        prefix1.add(8);
+        prefix1.add(12);
+        prefix1.add(13);
+        prefix1.add(42);
+        prefix1.add(50);
+        assertFalse(tree.containsPrefix(prefix1));
+        assertTrue(tree.containsSublist(prefix1));
+        var prefix2 = new ArrayList<Integer>();
+        prefix2.add(-55);
+        prefix2.add(-55);
+        prefix2.add(1);
+        prefix2.add(2);
+        prefix2.add(8);
+        prefix2.add(12);
+        prefix2.add(13);
+        assertTrue(tree.containsPrefix(prefix2));
+        assertTrue(tree.containsSublist(prefix2));
+    }
+
 }
