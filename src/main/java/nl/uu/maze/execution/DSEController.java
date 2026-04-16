@@ -365,7 +365,7 @@ public class DSEController {
                 if (concreteDriven) {
                     return Optional.of(current);
                 } else if (!current.isInfeasible()) {
-                    // For symblic-driven, generate test case
+                    // For symbolic-driven, generate test case
                     generateTestCase(current.returnToRootCaller(), searchStrategy);
                 }
                 continue;
