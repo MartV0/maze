@@ -37,9 +37,7 @@ public class BranchHistory {
     /** Converts branch history for a given CFG to a list */
     public static ArrayList<Stmt> GetPathFromBranchHistory(List<Integer> branch_history, StmtGraph<?> cfg, Stmt target) throws Exception {
         var path = new ArrayList<Stmt>();
-        var entry_points = cfg.getEntrypoints();
-        if (entry_points.size() > 1) throw new Exception("More than one entry point");
-        Stmt current_statement = entry_points.iterator().next();
+        Stmt current_statement = cfg.getStartingStmt();
         path.add(current_statement);
         int i = 0;
         while (current_statement != null && (current_statement != target || i < branch_history.size())) {
