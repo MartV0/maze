@@ -1,16 +1,17 @@
-package nl.uu.maze.search.strategy.PrimePath;
+package nl.uu.maze.search.strategy.PathGenerator;
 
 import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.model.SootMethod;
 import java.util.ArrayList;
 import java.util.List;
+import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
 
 import sootup.core.jimple.common.stmt.Stmt;
 
-public class PrimePathGenerator {
+public class PrimePathGenerator implements PathGenerator {
     /** Generate all prime paths in a CFG */
-    public static <V extends BasicBlock<V>> ArrayList<ArrayList<Stmt>> GeneratePaths(StmtGraph<V> cfg){
+    public <V extends BasicBlock<V>> ArrayList<ArrayList<Stmt>> GeneratePaths(StmtGraph<V> cfg){
         var paths = new ArrayList<ArrayList<Stmt>>();
         // initialize path list
         for (var node: cfg.getNodes()) {
@@ -50,8 +51,13 @@ public class PrimePathGenerator {
         return paths;
     }
 
+    public String getName() {
+        return "PrimePath";
+    }
+
     /** Extend path by following outgoing edges, adds the new paths into buffer
       * returns true iff new paths were added */
+    // TODO: ignore branch on exceptinos etc, only if/switch
     static <V extends BasicBlock<V>> boolean extend_path(ArrayList<Stmt> path, ArrayList<ArrayList<Stmt>> buffer, StmtGraph<V> cfg) {
         var added_new_paths = false;
         List<Stmt> successors = cfg.getAllSuccessors(path.getLast());

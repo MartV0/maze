@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.search.heuristic.SearchHeuristicFactory;
 import nl.uu.maze.search.heuristic.UniformHeuristic;
+import nl.uu.maze.search.strategy.PathGenerator.PrimePathGenerator;
 
 /**
  * Factory class for creating search strategies.
@@ -102,7 +103,7 @@ public class SearchStrategyFactory {
                     SearchHeuristicFactory.createHeuristics(
                             List.of("QueryCost", "SmallestDepth"),
                             List.of(0.7, 0.3)));
-            case "PrimePath", "PrimePathSearch", "PP" -> new PrimePathStrategy<>();
+            case "PrimePath", "PrimePathSearch", "PP" -> new PathStrategy<>(new PrimePathGenerator());
             default -> {
                 logger.warn("Unknown symbolic search strategy: {}, defaulting to DFS", name);
                 yield new DFS<>();
