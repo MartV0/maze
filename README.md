@@ -45,6 +45,7 @@ Additionally, when run, MAZE needs to load Z3 dynamic libraries. These are the f
 
   * **MacOS:** unfortunately MacOS' System Integrity Protocl prevents the DYLD_LIBRARY_PATH to be passed to subprocesses, so the above Linux way does not work for MacOS. I have not found a way to get around this other than by copying z3*.dylib files from Z3 root to MAZE project root.
 
+  * **Nix:** You can ignore all the above instruction and just install [the Nix package manager](https://nixos.org/download/). And then run `nix-shell` in the maze directory, to get a shell with all the required dependencies and configurations.
 
 ### ● Building the Project
 
