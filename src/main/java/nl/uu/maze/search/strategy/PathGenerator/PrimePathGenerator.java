@@ -8,8 +8,14 @@ import java.util.List;
 import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
 
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.jimple.common.stmt.JIfStmt;
+import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class PrimePathGenerator implements PathGenerator {
+    private final static Logger logger = LoggerFactory.getLogger(PrimePathGenerator.class);
+
     /** Generate all prime paths in a CFG */
     public <V extends BasicBlock<V>> ArrayList<ArrayList<Stmt>> GeneratePaths(StmtGraph<V> cfg){
         var paths = new ArrayList<ArrayList<Stmt>>();
@@ -57,12 +63,17 @@ public class PrimePathGenerator implements PathGenerator {
 
     /** Extend path by following outgoing edges, adds the new paths into buffer
       * returns true iff new paths were added */
-    // TODO: ignore branch on exceptinos etc, only if/switch
     static <V extends BasicBlock<V>> boolean extend_path(ArrayList<Stmt> path, ArrayList<ArrayList<Stmt>> buffer, StmtGraph<V> cfg) {
         var added_new_paths = false;
-        List<Stmt> successors = cfg.getAllSuccessors(path.getLast());
+        // successors is better than getAllSuccessors, because getAll also includes exceptional flow
+        var lastNode = path.getLast();
+        List<Stmt> successors = cfg.successors(lastNode);
+        if (successors.size() > 1 && !(lastNode instanceof JIfStmt) && !(lastNode instanceof JSwitchStmt)) {
+            logger.error("None if or switch statement with more than one successor {}", lastNode);
+            throw new RuntimeException("None if or switch statement with more than one successor");
+        }
         for (Stmt successor: successors) {
-            if (can_add_node(path, successor)){
+            if (can_add_node(path, successor)) {
                 var path_copy = new ArrayList<Stmt>(path);
                 path_copy.add(successor);
                 buffer.add(path_copy);
