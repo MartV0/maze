@@ -16,7 +16,7 @@ public class BranchHistory {
         var history = new ArrayList<Integer>();
         for (int i = 0; i < path.size(); i++) {
             var stmt = path.get(i);
-            var successors = cfg.getAllSuccessors(stmt);
+            var successors = cfg.successors(stmt);
             if (successors.size() > 1 && i < path.size() - 1) {
                 int branchIndex = ListUtils.IndexOf(successors, path.get(i+1));
                 if (branchIndex == -1) throw new java.lang.Error("Next item from path not found in list of successors");
@@ -34,14 +34,14 @@ public class BranchHistory {
         }
     }
 
-    /** Converts branch history for a given CFG to a list */
+    /** Converts branch history for a given CFG to a list of statements */
     public static ArrayList<Stmt> GetPathFromBranchHistory(List<Integer> branch_history, StmtGraph<?> cfg, Stmt target) throws Exception {
         var path = new ArrayList<Stmt>();
         Stmt current_statement = cfg.getStartingStmt();
         path.add(current_statement);
         int i = 0;
         while (current_statement != null && (current_statement != target || i < branch_history.size())) {
-            var successors = cfg.getAllSuccessors(current_statement);
+            var successors = cfg.successors(current_statement);
             switch (successors.size()) {
                 case 0:
                     return path;

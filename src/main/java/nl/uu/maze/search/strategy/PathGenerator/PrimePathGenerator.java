@@ -65,8 +65,8 @@ public class PrimePathGenerator implements PathGenerator {
       * returns true iff new paths were added */
     static <V extends BasicBlock<V>> boolean extend_path(ArrayList<Stmt> path, ArrayList<ArrayList<Stmt>> buffer, StmtGraph<V> cfg) {
         var added_new_paths = false;
-        // successors is better than getAllSuccessors, because getAll also includes exceptional flow
         var lastNode = path.getLast();
+        // successors is better than getAllSuccessors, because getAll also includes exceptional flow
         List<Stmt> successors = cfg.successors(lastNode);
         if (successors.size() > 1 && !(lastNode instanceof JIfStmt) && !(lastNode instanceof JSwitchStmt)) {
             logger.error("None if or switch statement with more than one successor {}", lastNode);

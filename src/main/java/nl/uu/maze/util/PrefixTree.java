@@ -67,6 +67,8 @@ public class PrefixTree<T> {
         if (index == input.size() || sublist) {
             deleted = node.isList;
             node.isList = false;
+            if (deleted)
+                logger.debug("Removed {} from prefix tree", node.content);
             node.content = null;
             if (index == input.size())
                 return deleted;

@@ -49,9 +49,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             var tree2 = new PrefixTree<Integer>();
             targetPaths.put(cfg, new Pair<PrefixTree<Integer>, PrefixTree<Integer>>(tree1, tree2));
             var paths = pathGenerator.GeneratePaths(cfg);
+            logger.debug("CFG: {}", cfg);
             logger.info("Added {} path targets", paths.size());
             for (var path: paths)
             {
+                logger.debug("Added path: {}", path);
                 var branchhistory = BranchHistory.ConvertPathToBranchHistory(path, cfg);
                 // branchhistory could possibly generate duplicates, but the
                 // prefixtree does not add duplicates so this is not a problem
@@ -69,12 +71,17 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     @Override
+    // TODO: maybe let this return bool, so we can choose if we want to cover a test case
     public void generatedTestCase(SymbolicState state) {
         var paths = targetPaths.get(state.getCFG());
+        logger.debug("Branchhistory: {}", state.getBranchHistory());
+        BranchHistory.LogHistory(state);
         // Remove covered paths from the set of paths that still need to be tested
         if(!paths.second().removeSublists(state.getBranchHistory())){
             logger.warn("Generated test case doesn't cover any target path");
-            BranchHistory.LogHistory(state);
+        } 
+        else {
+            logger.debug("Covered prime path");
         }
     }
 
@@ -95,7 +102,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // First try to find a target path that hasn't been explored yet
         var nextState = nextUncoveredInState();
         if (nextState != null) {
-            logger.info("Returning next state");
+            logger.debug("Returning next undiscovered state");
             return nextState;
         }
 
@@ -103,14 +110,20 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // test case generated for it yet
         var nextState2 = nextUncoveredInTests();
         if (nextState2 != null) {
-            logger.info("Returning next test state");
+            logger.debug("Returning next uncovered test state");
             return nextState2;
         }
 
         // If no target paths matches any of the states fall back on BFS
         // Needed to find beginning of a target path
         // TODO: maybe replace this with more direct search strategy (similar to distance to uncovered heuristic)?
-        return targets.isEmpty() ? null : targets.remove();
+        if (targets.isEmpty()) {
+            logger.info("Search space has been exhausted");
+            return null;
+        }
+        else {
+            return targets.remove();
+        }
     }
 
     /** try to find a target path that hasn't been explored yet */
@@ -155,6 +168,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     /** Returns true if no more target paths are present */
+    // TODO: rekening houden met constructors?
     private boolean targetPathsEmpty() {
         for (var entry: targetPaths.values()) {
             if(!entry.first().empty() || !entry.second().empty()) {
