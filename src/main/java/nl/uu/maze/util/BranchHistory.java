@@ -26,16 +26,12 @@ public class BranchHistory {
         return history;
     }
     
-    public static void LogHistory(SearchTarget state) {
-        try {
-            logger.info(GetPathFromBranchHistory(state.getBranchHistory(), state.getCFG(), state.getStmt()).toString());
-        } catch (Exception e) {
-            logger.error(e.toString());
-        }
+    public static String HistoryToString(SearchTarget state) {
+        return GetPathFromBranchHistory(state.getBranchHistory(), state.getCFG(), state.getStmt()).toString();
     }
 
     /** Converts branch history for a given CFG to a list of statements */
-    public static ArrayList<Stmt> GetPathFromBranchHistory(List<Integer> branch_history, StmtGraph<?> cfg, Stmt target) throws Exception {
+    public static ArrayList<Stmt> GetPathFromBranchHistory(List<Integer> branch_history, StmtGraph<?> cfg, Stmt target) {
         var path = new ArrayList<Stmt>();
         Stmt current_statement = cfg.getStartingStmt();
         path.add(current_statement);
@@ -58,13 +54,13 @@ public class BranchHistory {
         return path;
     }
 
-    static Stmt findSuccesor(Stmt statement, int brachHistory, List<Stmt> successors) throws Exception {
+    static Stmt findSuccesor(Stmt statement, int brachHistory, List<Stmt> successors) {
         for (int i = 0; i < successors.size(); i++) {
             if (ToBranchHistory(statement, i) == brachHistory) {
                 return successors.get(i);
             }
         }
-        throw new Exception("No matching successor statement");
+        throw new Error("No matching successor statement");
     }
 
     /** Converts a branch taken to an integer representation */

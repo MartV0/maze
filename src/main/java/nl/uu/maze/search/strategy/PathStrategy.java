@@ -75,7 +75,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     public void generatedTestCase(SymbolicState state) {
         var paths = targetPaths.get(state.getCFG());
         logger.debug("Branchhistory: {}", state.getBranchHistory());
-        BranchHistory.LogHistory(state);
+        logger.debug("Covered: {}", BranchHistory.HistoryToString(state));
+        logger.debug("Covered depth: {}", state.getDepth());
         // Remove covered paths from the set of paths that still need to be tested
         if(!paths.second().removeSublists(state.getBranchHistory())){
             logger.warn("Generated test case doesn't cover any target path");
