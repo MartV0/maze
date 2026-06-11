@@ -86,6 +86,10 @@ public class PrimePathGenerator implements PathGenerator {
     /** checks if path still remains a simple path or loop after adding a new node
     * assumes path is currently simple path or loop already */
     static boolean can_add_node(ArrayList<Stmt> path, Stmt new_node) {
+        // path is simple loop, can't add anything else to it
+        if (path.size() > 1 && path.get(0) == path.getLast()) {
+            return false;
+        }
         // start at second element, because first element is allowed to be the same as that would be a simple loop
         for (int i = 1; i < path.size(); i++) {
             if (path.get(i) == new_node) return false;
