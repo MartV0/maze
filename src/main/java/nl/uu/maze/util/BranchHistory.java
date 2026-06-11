@@ -11,9 +11,19 @@ import org.slf4j.Logger;
 public class BranchHistory {
     private final static Logger logger = LoggerFactory.getLogger(BranchHistory.class);
 
-    /** Convert a program path into branch history */
+    /** Convert a program path into branch history
+     * Includes branch that was needed to arrive at the path, if unambigiuous.
+     * For example if we have: if (a) b(); if (c) d();
+     * And we have the path b(); if (c) d(); we return [if(true), if(true)]
+     * Even though the first if wasn't in the path, but it is needed to reach b()
+     * Sometimes a statement can have multiple predecessors, these*/
     public static ArrayList<Integer> ConvertPathToBranchHistory(List<Stmt> path, StmtGraph<?> cfg){
         var history = new ArrayList<Integer>();
+        Integer preceding;
+        if (cfg.successors(path.get(0)).size() <= 1 
+            && (preceding = FindFirstPrecedingBranch(path.get(0), cfg)) != null) {
+            history.add(preceding);
+        }
         for (int i = 0; i < path.size(); i++) {
             var stmt = path.get(i);
             var successors = cfg.successors(stmt);
@@ -24,6 +34,23 @@ public class BranchHistory {
             }
         }
         return history;
+    }
+
+    private static Integer FindFirstPrecedingBranch(Stmt stmt, StmtGraph<?> cfg) {
+        Stmt current = stmt;
+        Stmt previous = null;
+        while (cfg.successors(current).size() <= 1) {
+            var preds = cfg.predecessors(current);
+            if (preds.size() == 1) {
+                previous = current;
+                current = preds.get(0);
+            }
+            else {
+                // Either no predecessors, or multiple which make it ambiguous, so we return null
+                return null;
+            }
+        }
+        return ToBranchHistory(current, ListUtils.IndexOf(cfg.successors(current), previous));
     }
     
     public static String HistoryToString(SearchTarget state) {
@@ -51,6 +78,7 @@ public class BranchHistory {
             }
             path.add(current_statement);
         }
+        assert(path.getLast() == target);
         return path;
     }
 
