@@ -94,6 +94,10 @@ public class PathConditionCandidate implements SearchTarget {
         return constraints.get(index).getBranchHistory();
     }
 
+    public List<Stmt> getStatementHistory() {
+        return constraints.get(index).getStatementHistory();
+    }
+
     public int getCallDepth() {
         return constraints.get(index).getCallDepth();
     }

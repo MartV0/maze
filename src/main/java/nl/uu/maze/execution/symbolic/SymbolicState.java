@@ -89,6 +89,10 @@ public class SymbolicState implements SearchTarget {
      */
     private final List<Integer> branchHistory;
     /**
+     * Tracks the statement history: which statements were executed along the
+     * path leading to this state. */
+    private final List<Stmt> statementHistory;
+    /**
      * The iteration at which this state was added to the search strategy.
      */
     private int iteration = -1;
@@ -122,6 +126,7 @@ public class SymbolicState implements SearchTarget {
         this.paramTypes = new HashMap<>();
         this.newCoverageDepths = new ArrayList<>();
         this.branchHistory = new ArrayList<>();
+        this.statementHistory = new ArrayList<>();
     }
 
     /*
@@ -148,6 +153,7 @@ public class SymbolicState implements SearchTarget {
         this.caller = state.caller;
         this.newCoverageDepths = new ArrayList<>(state.newCoverageDepths);
         this.branchHistory = new ArrayList<>(state.branchHistory);
+        this.statementHistory = new ArrayList<>(state.statementHistory);
 
         this.isCtorState = state.isCtorState;
         this.isFinalState = state.isFinalState;
@@ -376,6 +382,14 @@ public class SymbolicState implements SearchTarget {
     }
 
     /**
+     * Records the current statement in the history.
+     * This is used for statement history tracking.
+     */
+    public void recordStatement() {
+        statementHistory.add(stmt);
+    }
+
+    /**
      * Record a branch taken.
      * This is used for branch history tracking.
      * The branch is encoded by hashing the statement and the index of the
@@ -392,6 +406,10 @@ public class SymbolicState implements SearchTarget {
 
     public List<Integer> getBranchHistory() {
         return branchHistory;
+    }
+
+    public List<Stmt> getStatementHistory() {
+        return statementHistory;
     }
 
     public void setIteration(int iteration) {

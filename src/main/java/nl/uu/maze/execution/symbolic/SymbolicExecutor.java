@@ -41,13 +41,15 @@ public class SymbolicExecutor {
     private final JimpleToZ3Transformer jimpleToZ3 = new JimpleToZ3Transformer();
     private final boolean trackCoverage;
     private final boolean trackBranchHistory;
+    private final boolean trackStatementHistory;
 
     public SymbolicExecutor(ConcreteExecutor executor, SymbolicStateValidator validator,
-            JavaAnalyzer analyzer, boolean trackCoverage, boolean trackBranchHistory) {
+            JavaAnalyzer analyzer, boolean trackCoverage, boolean trackBranchHistory, boolean trackStatementHistory) {
         this.methodInvoker = new MethodInvoker(executor, validator, analyzer);
         this.validator = validator;
         this.trackCoverage = trackCoverage;
         this.trackBranchHistory = trackBranchHistory;
+        this.trackStatementHistory = trackStatementHistory;
     }
 
     /**
@@ -74,6 +76,8 @@ public class SymbolicExecutor {
         try {
             if (trackCoverage)
                 state.recordCoverage();
+            if (trackStatementHistory)
+                state.recordStatement();
             switch (stmt) {
                 case JIfStmt jIfStmt -> {
                     return handleIfStmt(jIfStmt, state, replay);

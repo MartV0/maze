@@ -94,6 +94,11 @@ public abstract class SearchStrategy<T extends SearchTarget> {
         return false;
     }
 
+    /** Whether this search strategy requires full statement history. */
+    public boolean requiresStatementHistoryData() {
+        return false;
+    }
+
     /** Used to inform search strategy a test case was generated based on the
      * specified symbolic state */
     public void generatedTestCase(SymbolicState state) {}

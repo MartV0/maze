@@ -51,6 +51,12 @@ public interface SearchTarget {
     List<Integer> getBranchHistory();
 
     /**
+     * Returns a list of statements that were executed along the path leading
+     * to this target.
+     */
+    List<Stmt> getStatementHistory();
+
+    /**
      * Returns the call depth (number of nested function calls) of the target.
      */
     int getCallDepth();

@@ -10,6 +10,7 @@ import com.microsoft.z3.Expr;
 import nl.uu.maze.util.Pair;
 import nl.uu.maze.util.Z3ContextProvider;
 import nl.uu.maze.util.Z3Utils;
+import nl.uu.maze.util.BranchHistory;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
 
@@ -80,6 +81,12 @@ public abstract class PathConstraint {
 
     public List<Integer> getBranchHistory() {
         return branchHistory;
+    }
+
+    public List<Stmt> getStatementHistory() {
+        var branchHistory = this.getBranchHistory();
+        var cfg = callStack[0].getSecond();
+        return BranchHistory.GetPathFromBranchHistory(branchHistory, cfg, stmt);
     }
 
     /**
