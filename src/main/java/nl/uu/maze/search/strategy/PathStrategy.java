@@ -3,17 +3,18 @@ package nl.uu.maze.search.strategy;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.execution.symbolic.SymbolicState;
 import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
-import nl.uu.maze.util.BranchHistory;
 import nl.uu.maze.util.PrefixTree;
 import nl.uu.maze.util.Pair;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Queue;
 import java.util.HashMap;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import sootup.core.graph.StmtGraph;
+import sootup.core.jimple.common.stmt.Stmt;
 
 public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     private final static Logger logger = LoggerFactory.getLogger(PathStrategy.class);
@@ -26,7 +27,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     // Second element in pair is all target paths that are not yet covered in some test
     //  This is needed in order to know which states we should keep exploring so they get covered
     //  in an actual test case
-    private HashMap<StmtGraph<?>, Pair<PrefixTree<Integer>, PrefixTree<Integer>>> targetPaths = new HashMap<StmtGraph<?>, Pair<PrefixTree<Integer>, PrefixTree<Integer>>>();
+    private HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>> targetPaths = new HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>>();
 
     // Used to generate any new target paths encountered
     PathGenerator pathGenerator;
@@ -45,28 +46,25 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // if it is the first time seeing this cfg, generate target paths for it
         // we only generate target paths for the top level functions
         if (!targetPaths.containsKey(cfg) && target.getCallDepth() == 0) {
-            var tree1 = new PrefixTree<Integer>();
-            var tree2 = new PrefixTree<Integer>();
-            targetPaths.put(cfg, new Pair<PrefixTree<Integer>, PrefixTree<Integer>>(tree1, tree2));
+            var tree1 = new PrefixTree<Stmt>();
+            var tree2 = new PrefixTree<Stmt>();
+            targetPaths.put(cfg, new Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>(tree1, tree2));
             var paths = pathGenerator.GeneratePaths(cfg);
             logger.debug("CFG: {}", cfg);
             logger.info("Added {} path targets", paths.size());
             for (var path: paths)
             {
                 logger.debug("Added path: {}", path);
-                var branchhistory = BranchHistory.ConvertPathToBranchHistory(path, cfg);
-                // branchhistory could possibly generate duplicates, but the
-                // prefixtree does not add duplicates so this is not a problem
-                tree1.insert(branchhistory);
-                tree2.insert(branchhistory);
+                tree1.insert(path);
+                tree2.insert(path);
             }
         }
-        targetPaths.get(cfg).first().removeSublists(target.getBranchHistory());
+        targetPaths.get(cfg).first().removeSublists(target.getStatementHistory());
         targets.add(target);
     }
 
     @Override
-    public boolean requiresBranchHistoryData() {
+    public boolean requiresStatementHistoryData() {
         return true;
     }
 
@@ -74,11 +72,10 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     // TODO: maybe let this return bool, so we can choose if we want to cover a test case
     public void generatedTestCase(SymbolicState state) {
         var paths = targetPaths.get(state.getCFG());
-        logger.debug("Branchhistory: {}", state.getBranchHistory());
-        logger.debug("Covered: {}", BranchHistory.HistoryToString(state));
+        logger.debug("Covered: {}", state.getStatementHistory());
         logger.debug("Covered depth: {}", state.getDepth());
         // Remove covered paths from the set of paths that still need to be tested
-        if(!paths.second().removeSublists(state.getBranchHistory())){
+        if(!paths.second().removeSublists(state.getStatementHistory())){
             logger.warn("Generated test case doesn't cover any target path");
         } 
         else {
@@ -143,7 +140,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             var target = iterator.next();
             var paths = targetPaths.get(target.getCFG());
             if (paths == null) continue;
-            var containsTarget = tests ? paths.second().containsSublist(target.getBranchHistory()) : paths.first().containsPrefix(target.getBranchHistory());
+            var containsTarget = tests ? paths.second().containsSublist(target.getStatementHistory()) : paths.first().containsPrefix(target.getStatementHistory());
             // If the history matches with any of the target paths, take this state next
             if (target.getCallDepth() == 0 && containsTarget) {
                 targets.remove(target);
