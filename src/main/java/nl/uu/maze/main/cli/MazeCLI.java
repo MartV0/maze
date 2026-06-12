@@ -122,7 +122,7 @@ public class MazeCLI implements Callable<Integer> {
             List<String> searchHeuristics = this.searchHeuristics.stream().map(ValidSearchHeuristic::name)
                     .toList();
             SearchStrategy<?> strategy = SearchStrategyFactory.createStrategy(searchStrategies,
-                    searchHeuristics, heuristicWeights, timeBudget);
+                    searchHeuristics, heuristicWeights, timeBudget, maxDepth);
 
             Long start = System.currentTimeMillis();
             DSEController controller = new DSEController(classPath, concreteDriven, strategy, outPath,

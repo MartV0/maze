@@ -37,10 +37,11 @@ public class SearchStrategyFactory {
      * @return A search strategy
      */
     public static <T extends SearchTarget> SearchStrategy<T> createStrategy(List<String> names,
-            List<String> heuristicNames, List<Double> heuristicWeights, long totalTimeBudget) {
+            List<String> heuristicNames, List<Double> heuristicWeights, long totalTimeBudget,
+            int maxDepth) {
         if (names.isEmpty()) {
             logger.warn("No search strategy provided, defaulting to DFS");
-            return createStrategy("DFS", heuristicNames, heuristicWeights);
+            return createStrategy("DFS", heuristicNames, heuristicWeights, maxDepth);
         }
 
         // If multiple names provided, use them in interleaved search
@@ -48,7 +49,7 @@ public class SearchStrategyFactory {
             Set<String> uniqueStrategies = new HashSet<>();
             List<SearchStrategy<T>> strategies = new ArrayList<>();
             for (String name : names) {
-                SearchStrategy<T> strategy = createStrategy(name, heuristicNames, heuristicWeights);
+                SearchStrategy<T> strategy = createStrategy(name, heuristicNames, heuristicWeights, maxDepth);
                 if (uniqueStrategies.add(strategy.getName())) {
                     strategies.add(strategy);
                 }
@@ -62,7 +63,7 @@ public class SearchStrategyFactory {
                     : new InterleavedSearch<>(strategies, totalTimeBudget);
         }
 
-        return createStrategy(names.getFirst(), heuristicNames, heuristicWeights);
+        return createStrategy(names.getFirst(), heuristicNames, heuristicWeights, maxDepth);
     }
 
     /**
@@ -80,7 +81,7 @@ public class SearchStrategyFactory {
      * @return A search strategy
      */
     private static <T extends SearchTarget> SearchStrategy<T> createStrategy(String name, List<String> heuristicNames,
-            List<Double> heuristicWeights) {
+            List<Double> heuristicWeights, int maxDepth) {
         return switch (name) {
             case "DepthFirst", "DepthFirstSearch", "DFS" -> new DFS<>();
             case "BreadthFirst", "BreadthFirstSearch", "BFS" -> new BFS<>();
@@ -103,7 +104,7 @@ public class SearchStrategyFactory {
                     SearchHeuristicFactory.createHeuristics(
                             List.of("QueryCost", "SmallestDepth"),
                             List.of(0.7, 0.3)));
-            case "PrimePath", "PrimePathSearch", "PP" -> new PathStrategy<>(new PrimePathGenerator());
+            case "PrimePath", "PrimePathSearch", "PP" -> new PathStrategy<>(new PrimePathGenerator(), maxDepth);
             default -> {
                 logger.warn("Unknown symbolic search strategy: {}, defaulting to DFS", name);
                 yield new DFS<>();

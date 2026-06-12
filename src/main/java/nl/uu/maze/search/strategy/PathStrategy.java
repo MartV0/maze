@@ -5,6 +5,7 @@ import nl.uu.maze.execution.symbolic.SymbolicState;
 import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
 import nl.uu.maze.util.PrefixTree;
 import nl.uu.maze.util.Pair;
+import nl.uu.maze.analysis.CFGDistance;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -31,9 +32,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     // Used to generate any new target paths encountered
     PathGenerator pathGenerator;
+    int maxDepth;
 
-    public PathStrategy(PathGenerator pathGenerator) {
+    public PathStrategy(PathGenerator pathGenerator, int maxDepth) {
         this.pathGenerator = pathGenerator;
+        this.maxDepth = maxDepth;
     }
 
     public String getName() {
@@ -93,6 +96,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     @Override
     public T next() {
+        if (targets.isEmpty()) {
+            logger.info("Search space has been exhausted");
+            return null;
+        }
+
         // Only continue searching if there is an uncovered target path
         if (targetPathsEmpty()) {
             logger.info("All target paths covered");
@@ -120,24 +128,46 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             return nextState2;
         }
 
-        // If no target paths matches any of the states fall back on BFS
-        // Needed to find beginning of a target path
-        // TODO: maybe replace this with more direct search strategy (similar to distance to uncovered heuristic)?
-        if (targets.isEmpty()) {
-            logger.info("Search space has been exhausted");
+        // If no target paths matches any of the states find the first state
+        // from which a target path is reachable, in order to find the
+        // beginning of a target path
+        var nextState3 = nextStateReachingTargetPath();
+        if (nextState3 != null) {
+            logger.debug("Returning next state reaching target path");
+            return nextState3;
+        } else {
+            logger.debug("No state can reach a target path anymore, exiting");
+            // Make sure to clear targets, otherwise MAZE might still generate test cases for them
+            targets.clear();
             return null;
-        }
-        else {
-            return targets.remove();
         }
     }
 
-    /** try to find a target path that hasn't been explored yet */
+    /** try to find the first state from which a target path can be reached */
+    private T nextStateReachingTargetPath() {
+        for (T target: targets) {
+            // First statements of all the undiscovered paths
+            var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
+            for (Stmt undiscoveredStmt: undiscoveredFirstStmts) {
+                int maxDistance = maxDepth - target.getDepth();
+                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> stmt == undiscoveredStmt) != -1) {
+                    // A first statement of a target path is reachable from this state, so return this state next
+                    targets.remove(target);
+                    return target;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** try to find a state where the end of the history matches the beginning
+     * of an undiscovered target path */
     private T nextUncoveredInState() {
         return nextUncoveredState(false);
     }
 
-    /** try to find a state that contains a target path that doesn't have a test case yet */
+    /** try to find a state that contains a target path as a subpath that
+     * hasn't been covered in a test case yet */
     private T nextUncoveredInTests() {
         return nextUncoveredState(true);
     }

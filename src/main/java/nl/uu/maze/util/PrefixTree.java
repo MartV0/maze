@@ -1,6 +1,7 @@
 package nl.uu.maze.util;
 
 import java.util.List;
+import java.util.Set;
 import java.util.HashMap;
 
 import org.slf4j.LoggerFactory;
@@ -139,5 +140,9 @@ public class PrefixTree<T> {
             }
         }
         return false;
+    }
+
+    public Set<T> initialElements() {
+        return root.children.keySet();
     }
 }
