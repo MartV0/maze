@@ -39,6 +39,9 @@ public interface SearchTarget {
      */
     int getDepth();
 
+    /** Returns whether or not the state is currently in a constructor*/
+    public boolean isCtorState();
+
     /**
      * Returns the depths at which the target covered new code.
      */

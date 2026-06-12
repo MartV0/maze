@@ -198,7 +198,7 @@ public class PrimePathStrategyTest {
 			assertTrue(interceptor.anyMatch(msg -> msg.contains("Covered:") && msg.contains(primePath)));
 		}
 
-		// All target paths are feasible so these shouldn't happen
+		// All target paths are feasible so the strategy should cover everything and exit before the search space has been exhausted
 		assertFalse(interceptor.anyMatch(msg -> msg.contains("Search space has been exhausted")));
 	}
 }

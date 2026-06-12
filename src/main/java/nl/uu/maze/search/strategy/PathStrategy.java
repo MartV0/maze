@@ -56,10 +56,13 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             {
                 logger.debug("Added path: {}", path);
                 tree1.insert(path);
-                tree2.insert(path);
+                // We do not require every prime path in the constructor to be
+                // covered, only for it to be discovered so other functions can
+                // be tested using the state
+                if (!target.isCtorState())
+                    tree2.insert(path);
             }
         }
-        targetPaths.get(cfg).first().removeSublists(target.getStatementHistory());
         targets.add(target);
     }
 
@@ -101,6 +104,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         var nextState = nextUncoveredInState();
         if (nextState != null) {
             logger.debug("Returning next undiscovered state");
+            // TODO: this is a bit inefficient
+            // Copy the history and add the current statement to it so the history is complete
+            var completeHistory = new ArrayList<Stmt>(nextState.getStatementHistory());
+            completeHistory.add(nextState.getStmt());
+            targetPaths.get(nextState.getCFG()).first().removeSublists(completeHistory);
             return nextState;
         }
 
@@ -166,7 +174,6 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     /** Returns true if no more target paths are present */
-    // TODO: rekening houden met constructors?
     private boolean targetPathsEmpty() {
         for (var entry: targetPaths.values()) {
             if(!entry.first().empty() || !entry.second().empty()) {

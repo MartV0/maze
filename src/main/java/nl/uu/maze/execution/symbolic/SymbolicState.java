@@ -174,9 +174,10 @@ public class SymbolicState implements SearchTarget {
         methodType = MethodType.METHOD;
         // Clear all variables except "this" variable
         store.keySet().removeIf(var -> !var.equals("this"));
-        // Clear the branchistory of the constructor, so the new branchistory
+        // Clear the historys of the constructor, so the new branchistory
         // corresponds to the history of the method
         branchHistory.clear();
+        statementHistory.clear();
     }
 
     public MethodType getMethodType() {

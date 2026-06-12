@@ -62,6 +62,10 @@ public class PathConditionCandidate implements SearchTarget {
         this.subIndex = subIndex;
     }
 
+    public boolean isCtorState() {
+        return state.isCtorState();
+    }
+
     public List<PathConstraint> getConstraints() {
         return constraints;
     }
