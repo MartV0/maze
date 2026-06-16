@@ -226,15 +226,15 @@ public class SymbolicState implements SearchTarget {
         return caller != null;
     }
 
-    public Pair<Stmt, StmtGraph<?>>[] getCallStack() {
+    public SymbolicState[] getCallStack() {
         int depth = getCallDepth();
         @SuppressWarnings("unchecked")
-        Pair<Stmt, StmtGraph<?>>[] callStack = new Pair[depth + 1];
+        SymbolicState[] callStack = new SymbolicState[depth + 1];
 
         SymbolicState state = this;
         int index = depth;
         while (state != null) {
-            callStack[index--] = Pair.of(state.stmt, state.cfg);
+            callStack[index--] = state;
             state = state.caller;
         }
 

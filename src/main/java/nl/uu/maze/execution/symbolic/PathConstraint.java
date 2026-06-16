@@ -24,7 +24,7 @@ public abstract class PathConstraint {
     protected final Stmt prevStmt;
     protected final StmtGraph<?> cfg;
     protected final int depth;
-    protected final Pair<Stmt, StmtGraph<?>>[] callStack;
+    protected final SymbolicState[] callStack;
     protected final List<Integer> newCoverageDepths;
     protected final List<Integer> branchHistory;
     /** Estimated cost to solve this constraint. */
@@ -49,7 +49,7 @@ public abstract class PathConstraint {
     }
 
     protected PathConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth, List<Integer> newCoverageDepths,
-            List<Integer> branchHistory, Pair<Stmt, StmtGraph<?>>[] callStack) {
+            List<Integer> branchHistory, SymbolicState[] callStack) {
         this.stmt = stmt;
         this.prevStmt = prevStmt;
         this.cfg = cfg;
@@ -85,7 +85,7 @@ public abstract class PathConstraint {
 
     public List<Stmt> getStatementHistory() {
         var branchHistory = this.getBranchHistory();
-        var cfg = callStack[0].getSecond();
+        var cfg = callStack[0].getCFG();
         return BranchHistory.GetPathFromBranchHistory(branchHistory, cfg, stmt);
     }
 
@@ -104,7 +104,7 @@ public abstract class PathConstraint {
         return callStack.length;
     }
 
-    public Pair<Stmt, StmtGraph<?>>[] getCallStack() {
+    public SymbolicState[] getCallStack() {
         return callStack;
     }
 
@@ -149,7 +149,7 @@ public abstract class PathConstraint {
         }
 
         protected SingleConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth,
-                List<Integer> newCoverageDepths, List<Integer> branchHistory, Pair<Stmt, StmtGraph<?>>[] callStack,
+                List<Integer> newCoverageDepths, List<Integer> branchHistory, SymbolicState[] callStack,
                 BoolExpr constraint) {
             super(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack);
             this.constraint = constraint;
@@ -218,7 +218,7 @@ public abstract class PathConstraint {
         }
 
         protected CompositeConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth,
-                List<Integer> newCoverageDepths, List<Integer> branchHistory, Pair<Stmt, StmtGraph<?>>[] callStack,
+                List<Integer> newCoverageDepths, List<Integer> branchHistory, SymbolicState[] callStack,
                 Expr<?> expr, Expr<?>[] values, int index, boolean allowDefault) {
             super(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack);
             this.expr = expr;

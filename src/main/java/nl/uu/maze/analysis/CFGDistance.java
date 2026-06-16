@@ -43,15 +43,15 @@ public class CFGDistance {
 
         // If target is in a method, called by another method, need to also be able to
         // return to the caller, so build the first item based on the call stack
-        Pair<Stmt, StmtGraph<?>>[] callStack = start.getCallStack();
+        SearchTarget[] callStack = start.getCallStack();
         StmtDistance current = null;
         for (int i = 0; i < callStack.length; i++) {
-            Pair<Stmt, StmtGraph<?>> frame = callStack[i];
+            SearchTarget frame = callStack[i];
             if (current == null) {
-                current = StmtDistance.create(frame.first(), 0, frame.second());
+                current = StmtDistance.create(frame.getStmt(), 0, frame.getCFG());
             } else {
                 // Create callee that points back to caller at the specific stmt
-                current = new StmtDistance(frame.first(), 0, frame.second(), current);
+                current = new StmtDistance(frame.getStmt(), 0, frame.getCFG(), current);
             }
         }
         worklist.offer(current);

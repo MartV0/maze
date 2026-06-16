@@ -106,7 +106,7 @@ public class PathConditionCandidate implements SearchTarget {
         return constraints.get(index).getCallDepth();
     }
 
-    public Pair<Stmt, StmtGraph<?>>[] getCallStack() {
+    public SymbolicState[] getCallStack() {
         return constraints.get(index).getCallStack();
     }
 

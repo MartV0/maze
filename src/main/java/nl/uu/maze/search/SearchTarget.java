@@ -65,10 +65,9 @@ public interface SearchTarget {
     int getCallDepth();
 
     /**
-     * Returns the call stack of the target, which is a list of pairs where each
-     * pair contains a statement and its corresponding control flow graph.
+     * Returns the call stack of the target, which is a list of search targets.
      */
-    Pair<Stmt, StmtGraph<?>>[] getCallStack();
+    SearchTarget[] getCallStack();
 
     /**
      * Sets the iteration at which the target was added to the search strategy.
