@@ -97,8 +97,7 @@ public class PrefixTree<T> {
 
     /** checks if input starting from range is a prefix of any of the lists in the tree
      *  if strict = true than function only returns true if entire list is in tree
-     *  if sublist = true than function also returns true if a list is
-     *      a prefix of input */
+     *  if prefix = true than function also returns true if a list is a prefix of input */
     private boolean contains(List<T> input, int start_range, boolean strict, boolean prefix) {
         TrieNode current = root;
         for (int i = start_range; i < input.size(); i++) {
@@ -109,6 +108,9 @@ public class PrefixTree<T> {
             }
             current = next_node;
         }
+        // If input.size == start_range, so we are at the end of the input,
+        // the current one should also be a list, otherwise this function will
+        // always return true for empty input
         return strict || input.size() == start_range ? current.isList : true;
     }
 
@@ -124,6 +126,7 @@ public class PrefixTree<T> {
 
     /** checks if any endings of the input are a prefix of any of the lists in the tree */
     public boolean containsPrefix(List<T> input) {
+        // Note: we use <= to also check for empty list
         for (int i = 0; i <= input.size(); i++) {
             if (contains(input, i, false, false)) {
                 return true;
@@ -134,6 +137,7 @@ public class PrefixTree<T> {
 
     /** Checks if any list in the tree is contained in input */
     public boolean containsSublist(List<T> input) {
+        // Note: we use <= to also check for empty list
         for (int i = 0; i <= input.size(); i++) {
             if (contains(input, i, true, true)) {
                 return true;
