@@ -64,7 +64,7 @@ public class SymbolicSearchStrategy extends SearchStrategy<SymbolicState> {
     }
 
     @Override
-    public void generatedTestCase(SymbolicState state) {
-        strategy.generatedTestCase(state);
+    public boolean generatedTestCase(SymbolicState state) {
+        return strategy.generatedTestCase(state);
     }
 }

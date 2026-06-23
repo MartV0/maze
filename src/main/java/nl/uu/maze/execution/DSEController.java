@@ -297,10 +297,9 @@ public class DSEController {
     private void generateTestCase(SymbolicState state, SearchStrategy strategy) {
         try {
             Optional<ArgMap> argMap = validator.evaluate(state);
-            if (argMap.isPresent()) {
+            if (argMap.isPresent() && strategy.generatedTestCase(state)) {
                 generator.addMethodTestCase(state.getMethod(), ctorSoot, argMap.get());
             }
-            strategy.generatedTestCase(state);
         } catch (Exception e) {
             logger.error("Error generating test case for method {}: {}", state.getMethod().getName(), e.getMessage());
             logger.debug("Error stack trace: ", e);

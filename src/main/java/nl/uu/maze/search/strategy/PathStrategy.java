@@ -75,17 +75,18 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     @Override
-    // TODO: maybe let this return bool, so we can choose if we want to cover a test case
-    public void generatedTestCase(SymbolicState state) {
+    public boolean generatedTestCase(SymbolicState state) {
         var paths = targetPaths.get(state.getCFG());
         logger.debug("Covered: {}", state.getStatementHistory());
         logger.debug("Covered depth: {}", state.getDepth());
         // Remove covered paths from the set of paths that still need to be tested
         if(!paths.second().removeSublists(state.getStatementHistory())){
             logger.warn("Generated test case doesn't cover any target path");
+            return false;
         } 
         else {
             logger.debug("Covered prime path");
+            return true;
         }
     }
 
