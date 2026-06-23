@@ -42,17 +42,7 @@ public class PrimePathGenerator implements PathGenerator {
             paths = new_paths;
         }
 
-        for (int i = 0; i < paths.size(); i++) {
-            for (int j = 0; j < paths.size(); j++) {
-                if (i == j) continue;
-                // TODO: replace with postfix tree
-                if (is_postfix(paths.get(i), paths.get(j))) {
-                    paths.remove(i);
-                    i--;
-                    break;
-                }
-            }
-        }
+        PathGenerator.remove_postfixes(paths);
 
         return paths;
     }
@@ -94,18 +84,6 @@ public class PrimePathGenerator implements PathGenerator {
         for (int i = 1; i < path.size(); i++) {
             if (path.get(i) == new_node) return false;
         }
-        return true;
-    }
-
-    /** returns true iff path1 is a postfix of path2 */
-    static boolean is_postfix (ArrayList<Stmt> path1, ArrayList<Stmt> path2) {
-        if (path1.size() > path2.size()) return false;
-        for (int i = 0; i < path1.size(); i++) {
-            var i1 = path1.size() - i - 1;
-            var i2 = path2.size() - i - 1;
-            if (path1.get(i1) != path2.get(i2)) return false;
-        }
-
         return true;
     }
 }
