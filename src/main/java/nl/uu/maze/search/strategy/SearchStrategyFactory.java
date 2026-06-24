@@ -13,6 +13,8 @@ import nl.uu.maze.search.heuristic.SearchHeuristicFactory;
 import nl.uu.maze.search.heuristic.UniformHeuristic;
 import nl.uu.maze.search.strategy.PathGenerator.PrimePathGenerator;
 import nl.uu.maze.search.strategy.PathGenerator.EdgePairGenerator;
+import nl.uu.maze.search.strategy.PathGenerator.EdgeGenerator;
+import nl.uu.maze.search.strategy.PathGenerator.NodeGenerator;
 
 /**
  * Factory class for creating search strategies.
@@ -107,6 +109,8 @@ public class SearchStrategyFactory {
                             List.of(0.7, 0.3)));
             case "PrimePath", "PrimePathSearch", "PP" -> new PathStrategy<>(new PrimePathGenerator(), maxDepth);
             case "EdgePair", "EdgePairSearch", "EP" -> new PathStrategy<>(new EdgePairGenerator(), maxDepth);
+            case "Edge", "EdgeSearch", "ES" -> new PathStrategy<>(new EdgeGenerator(), maxDepth);
+            case "Node", "NodeSearch", "NS" -> new PathStrategy<>(new NodeGenerator(), maxDepth);
             default -> {
                 logger.warn("Unknown symbolic search strategy: {}, defaulting to DFS", name);
                 yield new DFS<>();
@@ -128,6 +132,8 @@ public class SearchStrategyFactory {
         FeasibilityOptimized, FeasibilityOptimizedSearch, FOS,
         RandomPath, RandomPathSearch, RPS,
         PrimePath, PrimePathSearch, PP,
-        EdgePair, EdgePairSearch, EP
+        EdgePair, EdgePairSearch, EP,
+        Edge, EdgeSearch, ES,
+        Node, NodeSearch, NS,
     }
 }
