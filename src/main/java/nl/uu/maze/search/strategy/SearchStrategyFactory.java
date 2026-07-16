@@ -111,6 +111,7 @@ public class SearchStrategyFactory {
             case "EdgePair", "EdgePairSearch", "EP" -> new PathStrategy<>(new EdgePairGenerator(), maxDepth);
             case "Edge", "EdgeSearch", "ES" -> new PathStrategy<>(new EdgeGenerator(), maxDepth);
             case "Node", "NodeSearch", "NS" -> new PathStrategy<>(new NodeGenerator(), maxDepth);
+            case "BasisPath", "BP" -> new BasisPathStrategy<>(maxDepth);
             default -> {
                 logger.warn("Unknown symbolic search strategy: {}, defaulting to DFS", name);
                 yield new DFS<>();
@@ -135,5 +136,6 @@ public class SearchStrategyFactory {
         EdgePair, EdgePairSearch, EP,
         Edge, EdgeSearch, ES,
         Node, NodeSearch, NS,
+        BasisPath, BP
     }
 }
