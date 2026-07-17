@@ -44,6 +44,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     public void add(T target) {
         var cfg = target.getCFG();
         if (!basisSets.containsKey(cfg)) {
+            logger.debug("Added: {}", target.getCFG());
             basisSets.put(cfg, new BasisSet(cfg));
         }
         targets.add(target);
@@ -106,7 +107,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         BasisSet set = basisSets.get(state.getCFG());
         boolean added = set.addPath(state.getBranchHistory());
         if (added) logger.debug("Covered: {}", BranchHistory.HistoryToString(state));
-        else logger.debug("Ignored:", BranchHistory.HistoryToString(state));
+        else logger.debug("Ignored: {}", BranchHistory.HistoryToString(state));
         return added;
     }
 
@@ -191,10 +192,10 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         boolean isBranchUncovered(int branchIndex) {
             for (var pathVector: basisSet) {
                 if (pathVector.get(branchIndex) > 0) {
-                    return true;
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
 
         /// add path to basis set if it is linearly independent
