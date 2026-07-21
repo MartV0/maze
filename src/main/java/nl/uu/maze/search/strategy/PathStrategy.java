@@ -12,12 +12,21 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.function.Predicate;
+import java.util.function.Function;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
 
 public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
+    public enum SearchOrder {
+        BFS,
+        DFS,
+        Heuristic
+    }
+
     private final static Logger logger = LoggerFactory.getLogger(PathStrategy.class);
 
     private final LinkedList<T> targets = new LinkedList<>();
@@ -146,42 +155,56 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     /** try to find the first state from which a target path can be reached */
     private T nextStateReachingTargetPath() {
-        for (T target: targets) {
+        return nextState(SearchOrder.BFS, target -> {
             // First statements of all the undiscovered paths
             var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
             for (Stmt undiscoveredStmt: undiscoveredFirstStmts) {
                 int maxDistance = maxDepth - target.getDepth();
-                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> stmt == undiscoveredStmt) != -1) {
-                    // A first statement of a target path is reachable from this state, so return this state next
-                    targets.remove(target);
-                    return target;
-                }
+                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> stmt == undiscoveredStmt) != -1)
+                    return true;
             }
-        }
-        return null;
+            return false;
+        });
     }
 
     /** try to find a state where the end of the history matches the beginning
      * of an undiscovered target path */
     private T nextUncoveredInState() {
-        return nextUncoveredState(false);
+        return nextState(SearchOrder.DFS, target -> {
+            var paths = targetPaths.get(target.getCFG());
+            if (paths == null) return false;
+            return target.getCallDepth() == 0 && paths.first().containsPrefix(target.getStatementHistory());
+        });
     }
 
     /** try to find a state that contains a target path as a subpath that
      * hasn't been covered in a test case yet */
     private T nextUncoveredInTests() {
-        return nextUncoveredState(true);
+        return nextState(SearchOrder.BFS, target -> {
+            var paths = targetPaths.get(target.getCFG());
+            if (paths == null) return false;
+            return target.getCallDepth() == 0 && paths.second().containsSublist(target.getStatementHistory());
+        });
     }
 
-    private T nextUncoveredState(boolean tests) {
-        var iterator = tests ? targets.iterator() : targets.descendingIterator();
+    /** Loops through targets and returns first one matching predicate
+    * if order == BFS than the search starts from the start of the queue,
+    * if order == DFS than the search starts from the end of the queue */
+    private T nextState(SearchOrder order, Predicate<T> predicate) {
+        Iterator<T> iterator;
+        switch (order) {
+            case SearchOrder.BFS:
+                iterator = targets.iterator();
+                break;
+            case SearchOrder.DFS:
+                iterator = targets.descendingIterator();
+                break;
+            default:
+                return null;
+        }
         while (iterator.hasNext()) {
             var target = iterator.next();
-            var paths = targetPaths.get(target.getCFG());
-            if (paths == null) continue;
-            var containsTarget = tests ? paths.second().containsSublist(target.getStatementHistory()) : paths.first().containsPrefix(target.getStatementHistory());
-            // If the history matches with any of the target paths, take this state next
-            if (target.getCallDepth() == 0 && containsTarget) {
+            if (predicate.test(target)) {
                 targets.remove(target);
                 return target;
             }
