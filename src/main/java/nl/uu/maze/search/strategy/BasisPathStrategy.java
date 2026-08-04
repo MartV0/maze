@@ -57,11 +57,15 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
 
     @Override
     public T next() {
-        if (basisSetsComplete()) return null;
+        if (basisSetsComplete()) {
+            logger.info("Basis coverage achieved");
+            targets.clear();
+            return null;
+        }
         // First try to find a state with an uncovered branch in the history
         for (T target: targets) {
             var basisset = basisSets.get(target.getCFG());
-            if (basisset.containsUncoveredBranch(target.getBranchHistory())) {
+            if (target.getCallDepth() == 0 && basisset.containsUncoveredBranch(target.getBranchHistory())) {
                 targets.remove(target);
                 logger.debug("returning uncovered state");
                 return target;
@@ -70,7 +74,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         // Second try to find a state that can reach an uncovered branch
         for (T target: targets) {
             var basisset = basisSets.get(target.getCFG());
-            if (basisset.canReachUncoveredBranch(target, maxDepth)) {
+            if (target.getCallDepth() == 0 && basisset.canReachUncoveredBranch(target, maxDepth)) {
                 targets.remove(target);
                 logger.debug("returning reachable state");
                 return target;
@@ -78,7 +82,12 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         }
         logger.debug("returning next state");
         // If no such states are found, return first target
-        return targets.isEmpty() ? null : targets.remove();
+        if (targets.isEmpty()) {
+            logger.debug("Search space exhausted");
+            return null;
+        } else {
+            return targets.remove();
+        }
     }
 
     @Override
@@ -235,7 +244,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
 
         // checks whether current basisset is complete
         public boolean isComplete() {
-            return basisSet.size() == cyclomaticComplexity;
+            return basisSet.size() >= cyclomaticComplexity;
         }
     }
 }
