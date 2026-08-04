@@ -6,10 +6,13 @@ import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
 import nl.uu.maze.util.PrefixTree;
 import nl.uu.maze.util.Pair;
 import nl.uu.maze.analysis.CFGDistance;
+import nl.uu.maze.search.strategy.ProbabilisticSearch;
+import nl.uu.maze.search.heuristic.SearchHeuristic;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -42,6 +45,9 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     // Used to generate any new target paths encountered
     PathGenerator pathGenerator;
     int maxDepth;
+    SearchOrder pathExploration = SearchOrder.DFS;
+    SearchOrder pathFinishing = SearchOrder.BFS;
+    SearchOrder pathFinding = SearchOrder.BFS;
 
     public PathStrategy(PathGenerator pathGenerator, int maxDepth) {
         this.pathGenerator = pathGenerator;
@@ -86,14 +92,15 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     @Override
     public boolean generatedTestCase(SymbolicState state) {
         var paths = targetPaths.get(state.getCFG());
-        logger.debug("Covered: {}", state.getStatementHistory());
         logger.debug("Covered depth: {}", state.getDepth());
         // Remove covered paths from the set of paths that still need to be tested
         if(!paths.second().removeSublists(state.getStatementHistory())){
+            logger.debug("Ignored: {}", state.getStatementHistory());
             logger.warn("Generated test case doesn't cover any target path");
             return false;
         } 
         else {
+            logger.debug("Covered: {}", state.getStatementHistory());
             logger.debug("Covered prime path");
             return true;
         }
@@ -119,10 +126,9 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         }
 
         // First try to find a target path that hasn't been explored yet
-        var nextState = nextUncoveredInState();
+        var nextState = nextUndiscoveredState();
         if (nextState != null) {
             logger.debug("Returning next undiscovered state");
-            // TODO: this is a bit inefficient
             // Copy the history and add the current statement to it so the history is complete
             var completeHistory = new ArrayList<Stmt>(nextState.getStatementHistory());
             completeHistory.add(nextState.getStmt());
@@ -153,24 +159,30 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         }
     }
 
-    /** try to find the first state from which a target path can be reached */
+    /** try to find a state from which a target path can be reached */
     private T nextStateReachingTargetPath() {
-        return nextState(SearchOrder.BFS, target -> {
-            // First statements of all the undiscovered paths
-            var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
-            for (Stmt undiscoveredStmt: undiscoveredFirstStmts) {
+        if (pathFinding == SearchOrder.Heuristic) {
+            return nextStateHeuristic(target -> {
+                var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
+                return distanceToScore(target, stmt -> undiscoveredFirstStmts.contains(stmt));
+            });
+        }
+        else {
+            return nextState(pathFinding, target -> {
+                // First statements of all the undiscovered paths
+                var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
                 int maxDistance = maxDepth - target.getDepth();
-                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> stmt == undiscoveredStmt) != -1)
+                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> undiscoveredFirstStmts.contains(stmt)) != -1)
                     return true;
-            }
-            return false;
-        });
+                return false;
+            });
+        }
     }
 
     /** try to find a state where the end of the history matches the beginning
      * of an undiscovered target path */
-    private T nextUncoveredInState() {
-        return nextState(SearchOrder.DFS, target -> {
+    private T nextUndiscoveredState() {
+        return nextState(pathExploration, target -> {
             var paths = targetPaths.get(target.getCFG());
             if (paths == null) return false;
             return target.getCallDepth() == 0 && paths.first().containsPrefix(target.getStatementHistory());
@@ -180,11 +192,44 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     /** try to find a state that contains a target path as a subpath that
      * hasn't been covered in a test case yet */
     private T nextUncoveredInTests() {
-        return nextState(SearchOrder.BFS, target -> {
-            var paths = targetPaths.get(target.getCFG());
-            if (paths == null) return false;
-            return target.getCallDepth() == 0 && paths.second().containsSublist(target.getStatementHistory());
-        });
+        if (pathFinishing == SearchOrder.Heuristic) {
+            // Heuristic that prioritises states which are closer to terminal states
+            return nextStateHeuristic(
+                target -> distanceToScore(
+                    target,
+                    // matches terminal statements
+                    stmt -> target.getCFG().successors(stmt).size() == 0
+                )
+            );
+        }
+        else {
+            return nextState(pathFinishing, target -> {
+                var paths = targetPaths.get(target.getCFG());
+                if (paths == null) return false;
+                return target.getCallDepth() == 0 && paths.second().containsSublist(target.getStatementHistory());
+            });
+        }
+    }
+
+    /** Scores a target based on how close it it to a statement satisfying the predicate */
+    private double distanceToScore(T target, Predicate<Stmt> predicate) {
+        int maxDistance = maxDepth - target.getDepth();
+        // Calculates the distance to first matching statement
+        int distance = CFGDistance.calculateDistance(
+            target, 
+            maxDistance, 
+            false, 
+            -1,
+            stmt -> predicate.test(stmt)
+        );
+        if (distance == -1) {
+            return 0;
+        }
+        return SearchHeuristic.applyExponentialScaling(
+            distance,
+            0.1, 
+            false
+        );
     }
 
     /** Loops through targets and returns first one matching predicate
@@ -200,7 +245,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                 iterator = targets.descendingIterator();
                 break;
             default:
-                return null;
+                throw new Error("nextState only works with BFS/DFS, not heuristic");
         }
         while (iterator.hasNext()) {
             var target = iterator.next();
@@ -210,6 +255,23 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             }
         }
         return null;
+    }
+
+    private T nextStateHeuristic(Function<T, Double> weightFunction) {
+        double weights[] = new double[targets.size()];
+        double totalWeight = 0;
+        for(int i = 0; i < targets.size(); i++) {
+            double weight = weightFunction.apply(targets.get(i));
+            weights[i] = weight;
+            totalWeight += weight;
+        }
+        if (totalWeight > 0) {
+            int index = ProbabilisticSearch.selectWeightedIndex(weights, totalWeight);
+            return targets.remove(index);
+        }
+        else {
+            return null;
+        }
     }
 
     @Override

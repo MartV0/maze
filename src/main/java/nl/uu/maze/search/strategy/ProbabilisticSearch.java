@@ -178,7 +178,7 @@ public class ProbabilisticSearch<T extends SearchTarget> extends SearchStrategy<
         return selected;
     }
 
-    private int selectWeightedIndex(double[] weights, double totalWeight) {
+    public static int selectWeightedIndex(double[] weights, double totalWeight) {
         double randomValue = rand.nextDouble() * totalWeight;
         double sum = 0;
         for (int i = 0; i < weights.length; i++) {

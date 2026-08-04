@@ -65,7 +65,7 @@ public abstract class SearchHeuristic {
      *                     negated).
      * @return The scaled value
      */
-    protected double applyExponentialScaling(double value, double factor, boolean preferHigher) {
+    public static double applyExponentialScaling(double value, double factor, boolean preferHigher) {
         // Use exponential decay or growth to strengthen the differences between values
         // -1 prefers lower values (exponential decay)
         // 1 prefers higher values (exponential growth)
