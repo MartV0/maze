@@ -55,6 +55,10 @@ public class MazeCLI implements Callable<Integer> {
             "--strategy" }, description = "One or multiple of the available search strategies (default: ${DEFAULT-VALUE}, options: ${COMPLETION-CANDIDATES})", defaultValue = "DFS", split = ",", arity = "1..*", paramLabel = "<name>")
     private List<ValidSearchStrategy> searchStrategies;
 
+    @Option(names = { "-e",
+            "--extra-search-arg" }, description = "Extra arguments passed along to the search strategy/heuristic if required (default: ${DEFAULT-VALUE}, options: ${COMPLETION-CANDIDATES})", defaultValue = "", split = ",", arity = "0..*", paramLabel = "<arg>")
+    private List<String> extraSearchArg;
+
     @Option(names = { "-u",
             "--heuristic" }, description = "One or multiple of the available search heuristics to use for probabilistic search (default: ${DEFAULT-VALUE}, options: ${COMPLETION-CANDIDATES})", defaultValue = "UH", split = ",", arity = "1..*", paramLabel = "<name>")
     private List<ValidSearchHeuristic> searchHeuristics;
@@ -122,7 +126,7 @@ public class MazeCLI implements Callable<Integer> {
             List<String> searchHeuristics = this.searchHeuristics.stream().map(ValidSearchHeuristic::name)
                     .toList();
             SearchStrategy<?> strategy = SearchStrategyFactory.createStrategy(searchStrategies,
-                    searchHeuristics, heuristicWeights, timeBudget, maxDepth);
+                    searchHeuristics, heuristicWeights, timeBudget, maxDepth, extraSearchArg);
 
             Long start = System.currentTimeMillis();
             DSEController controller = new DSEController(classPath, concreteDriven, strategy, outPath,

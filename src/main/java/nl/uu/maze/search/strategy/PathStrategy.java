@@ -30,6 +30,16 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         Heuristic
     }
 
+    private SearchOrder stringToOrder(String s) {
+        s = s.toLowerCase();
+        switch (s) {
+            case "b", "bfs" -> { return SearchOrder.BFS; }
+            case "d", "dfs" -> { return SearchOrder.DFS; }
+            case "h", "heuristic" -> { return SearchOrder.Heuristic; }
+        }
+        throw new Error("Invalid search order");
+    }
+
     private final static Logger logger = LoggerFactory.getLogger(PathStrategy.class);
 
     private final LinkedList<T> targets = new LinkedList<>();
@@ -49,9 +59,17 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     SearchOrder pathFinishing = SearchOrder.BFS;
     SearchOrder pathFinding = SearchOrder.BFS;
 
-    public PathStrategy(PathGenerator pathGenerator, int maxDepth) {
+    public PathStrategy(PathGenerator pathGenerator, int maxDepth, List<String> args) {
         this.pathGenerator = pathGenerator;
         this.maxDepth = maxDepth;
+        if (args.size() >= 3) {
+            this.pathExploration = stringToOrder(args.get(0));
+            this.pathFinishing = stringToOrder(args.get(1));
+            this.pathFinding = stringToOrder(args.get(2));
+        }
+        logger.debug("pathExploration:{}", pathExploration);
+        logger.debug("pathFinishing:{}", pathFinishing);
+        logger.debug("pathFinishing:{}", pathFinding);
     }
 
     public String getName() {
