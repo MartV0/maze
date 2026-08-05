@@ -107,6 +107,7 @@ public class ConcreteExecutor {
                 String msg = e instanceof InvocationTargetException ? e.getCause().getMessage()
                         : e.getMessage();
                 logger.warn("Execution of method {} threw an exception: {}", method.getName(), msg);
+                logger.debug("Stack trace: {}", e);
             }
             return new ExecutionResult(null, e, false);
         }
