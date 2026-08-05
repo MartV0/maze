@@ -13,6 +13,7 @@ import nl.uu.maze.util.Z3Utils;
 import nl.uu.maze.util.BranchHistory;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.java.core.JavaSootMethod;
 
 /**
  * Represents a path constraint in symbolic execution.
@@ -23,6 +24,7 @@ public abstract class PathConstraint {
     protected final Stmt stmt;
     protected final Stmt prevStmt;
     protected final StmtGraph<?> cfg;
+    protected final JavaSootMethod method;
     protected final int depth;
     protected final SymbolicState[] callStack;
     protected final List<Integer> newCoverageDepths;
@@ -39,6 +41,7 @@ public abstract class PathConstraint {
         this.stmt = state.getStmt();
         this.prevStmt = state.getPrevStmt();
         this.cfg = state.getCFG();
+        this.method = state.getMethod();
         this.depth = state.getDepth();
         // getCallStack() returns a fresh array
         this.callStack = state.getCallStack();
@@ -48,11 +51,12 @@ public abstract class PathConstraint {
         this.branchHistory = new ArrayList<>(state.getBranchHistory());
     }
 
-    protected PathConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth, List<Integer> newCoverageDepths,
-            List<Integer> branchHistory, SymbolicState[] callStack) {
+    protected PathConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, JavaSootMethod method,
+            int depth, List<Integer> newCoverageDepths, List<Integer> branchHistory, SymbolicState[] callStack) {
         this.stmt = stmt;
         this.prevStmt = prevStmt;
         this.cfg = cfg;
+        this.method = method;
         this.depth = depth;
         this.callStack = callStack;
         this.newCoverageDepths = newCoverageDepths;
@@ -69,6 +73,10 @@ public abstract class PathConstraint {
 
     public StmtGraph<?> getCFG() {
         return cfg;
+    }
+
+    public JavaSootMethod getMethod() {
+        return method;
     }
 
     public int getDepth() {
@@ -148,10 +156,10 @@ public abstract class PathConstraint {
             this.constraint = constraint;
         }
 
-        protected SingleConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth,
+        protected SingleConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, JavaSootMethod method, int depth,
                 List<Integer> newCoverageDepths, List<Integer> branchHistory, SymbolicState[] callStack,
                 BoolExpr constraint) {
-            super(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack);
+            super(stmt, prevStmt, cfg, method, depth, newCoverageDepths, branchHistory, callStack);
             this.constraint = constraint;
         }
 
@@ -160,8 +168,8 @@ public abstract class PathConstraint {
         }
 
         public SingleConstraint negate() {
-            return new SingleConstraint(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack,
-                    Z3Utils.negate(constraint));
+            return new SingleConstraint(stmt, prevStmt, cfg, method, depth, newCoverageDepths,
+                    branchHistory, callStack, Z3Utils.negate(constraint));
         }
     }
 
@@ -217,10 +225,10 @@ public abstract class PathConstraint {
             this.index = index;
         }
 
-        protected CompositeConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, int depth,
+        protected CompositeConstraint(Stmt stmt, Stmt prevStmt, StmtGraph<?> cfg, JavaSootMethod method, int depth,
                 List<Integer> newCoverageDepths, List<Integer> branchHistory, SymbolicState[] callStack,
                 Expr<?> expr, Expr<?>[] values, int index, boolean allowDefault) {
-            super(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack);
+            super(stmt, prevStmt, cfg, method, depth, newCoverageDepths, branchHistory, callStack);
             this.expr = expr;
             this.values = values;
             this.allowDefault = allowDefault;
@@ -279,7 +287,7 @@ public abstract class PathConstraint {
             if (newIndex < minIndex || newIndex >= values.length) {
                 throw new IllegalArgumentException("Invalid index for composite constraint");
             }
-            return new CompositeConstraint(stmt, prevStmt, cfg, depth, newCoverageDepths, branchHistory, callStack,
+            return new CompositeConstraint(stmt, prevStmt, cfg, method, depth, newCoverageDepths, branchHistory, callStack,
                     expr, values, newIndex, allowDefault);
         }
     }

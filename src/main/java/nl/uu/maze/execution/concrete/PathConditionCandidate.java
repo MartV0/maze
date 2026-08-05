@@ -12,6 +12,7 @@ import nl.uu.maze.execution.symbolic.PathConstraint.*;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.util.Pair;
 import sootup.core.graph.StmtGraph;
+import sootup.java.core.JavaSootMethod;
 import sootup.core.jimple.common.stmt.Stmt;
 
 /**
@@ -84,6 +85,10 @@ public class PathConditionCandidate implements SearchTarget {
 
     public StmtGraph<?> getCFG() {
         return constraints.get(index).getCFG();
+    }
+
+    public JavaSootMethod getMethod() {
+        return constraints.get(index).getMethod();
     }
 
     public int getDepth() {

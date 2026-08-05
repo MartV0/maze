@@ -6,6 +6,7 @@ import nl.uu.maze.execution.symbolic.PathConstraint;
 import nl.uu.maze.util.Pair;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.java.core.JavaSootMethod;
 
 /**
  * Interface representing a target for the search process in the DSE engine.
@@ -28,6 +29,11 @@ public interface SearchTarget {
      * Returns the control flow graph that the target is part of.
      */
     StmtGraph<?> getCFG();
+
+    /**
+     * Returns the soot method that the target is part of.
+     */
+    JavaSootMethod getMethod();
 
     /**
      * Returns the constraints that are associated with the target.
