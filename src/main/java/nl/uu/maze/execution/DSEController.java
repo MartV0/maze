@@ -149,7 +149,7 @@ public class DSEController {
 
         Set<JavaSootMethod> methods = sootClass.getMethods();
 
-        // Organize mehtods under test into static and non-static, and filter out any
+        // Organize methods under test into static and non-static, and filter out any
         // non-standard methods
         Pattern pattern = Pattern.compile("<[^>]+>");
         for (JavaSootMethod method : methods) {
@@ -358,7 +358,7 @@ public class DSEController {
                 executionDeadline = System.currentTimeMillis() + remainingTime / 2;
             }
 
-            logger.debug("Current state: {}", current);
+            // logger.debug("Current state: {}", current);
             if (!current.isCtorState() && current.isFinalState() || current.getDepth() >= maxDepth) {
                 // For concrete-driven, we only care about one final state, so we can stop
                 if (concreteDriven) {
