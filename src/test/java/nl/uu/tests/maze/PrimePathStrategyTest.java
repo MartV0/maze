@@ -108,7 +108,7 @@ public class PrimePathStrategyTest {
 				      + sp + "--log-level=DEBUG"
 				      ;
 	    int exitCode = new CommandLine(new MazeCLI()).execute(argz.split(" ") );
-	    
+
 		// Infeasible paths have been commented out
 		// TODO: these were copied from path generator output, check them manually
 		String[] primePaths = {
@@ -133,15 +133,15 @@ public class PrimePathStrategyTest {
 			"if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1, goto, if i >= max",
 			"if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto, if i >= max",
 		};
-		
+
 		// Assert all prime paths have been covered
 		for (String primePath: primePaths) {
 			// System.out.println(primePath);
 			assertTrue(interceptor.anyMatch(msg -> msg.contains("Covered:") && msg.contains(primePath)));
 		}
 
-		// TODO: shouldn't happen if handling infeasible paths well
-		// assertFalse(interceptor.anyMatch(msg -> msg.contains("Search space has been exhausted")));
+		// shouldn't happen if infeasible paths are handled well
+		assertFalse(interceptor.anyMatch(msg -> msg.contains("Search space has been exhausted")));
 	}
 
 	@Test

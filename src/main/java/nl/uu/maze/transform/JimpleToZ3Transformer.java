@@ -549,17 +549,21 @@ public class JimpleToZ3Transformer extends AbstractValueVisitor<Expr<?>> {
         String var = ArgMap.getSymbolicName(state.getMethodType(), ref.getIndex());
         Type sootType = ref.getType();
         state.setParamType(var, sootType);
+        setResult(newVariable(state, var, sootType, lhs));
+    }
 
+    /** Creates a new expr of a given type, if it doesn't exist yet in the state
+      * and update heap and aliases */
+    public static Expr<?> newVariable(SymbolicState state, String var, Type sootType, String lhs) {
         // If a value for this parameter is already defined (e.g., in a method call),
         // use that value
         Expr<?> param = state.lookup(var);
         if (param != null) {
-            setResult(param);
             // Copy array indices if present
             if (state.heap.isMultiArray(var)) {
                 state.heap.copyArrayIndices(var, lhs);
             }
-            return;
+            return param;
         }
 
         // Otherwise, create new symbolic value for the parameter
@@ -572,14 +576,14 @@ public class JimpleToZ3Transformer extends AbstractValueVisitor<Expr<?>> {
             }
         } else if (sootType instanceof ClassType && !sootType.toString().equals("java.lang.String")) {
             // Allocate new object on the heap
-            param = state.heap.allocateObject(var, ref.getType());
+            param = state.heap.allocateObject(var, sootType);
         } else {
             // Create a new variable for the parameter
         	Sort sort = sorts.determineSort(sootType) ;
             param = ctx().mkConst(var,sort);
             
             // WP adding new behavior:
-            // When the parameter is floating-point like, we add a constrain that it should be
+            // When the parameter is floating-point like, we add a constraint that it should be
             // a normal number (e.g. not NaN nor inf). This is only added if the engine-configuration
             // says it is to be added.
             //
@@ -591,15 +595,14 @@ public class JimpleToZ3Transformer extends AbstractValueVisitor<Expr<?>> {
             	//System.out.println(">>>> creating extra domain constraint for " + var);
             	state.getEngineConstraints().add(new SingleConstraint(state,insistNormalValue)) ;
             }
-            
         }
-
-        setResult(param);
 
         // For reference parameters, need to track potential aliases
         if (sorts.isRef(param)) {
             state.heap.findAliases(param);
         }
+
+        return param;
     }
 
     @Override

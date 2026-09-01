@@ -8,6 +8,11 @@ import nl.uu.maze.util.Pair;
 import nl.uu.maze.analysis.CFGDistance;
 import nl.uu.maze.search.strategy.ProbabilisticSearch;
 import nl.uu.maze.search.heuristic.SearchHeuristic;
+import nl.uu.maze.execution.concrete.ConcreteExecutor;
+import nl.uu.maze.execution.symbolic.SymbolicStateValidator;
+import nl.uu.maze.execution.symbolic.SymbolicExecutor;
+import nl.uu.maze.analysis.JavaAnalyzer;
+import nl.uu.maze.execution.symbolic.PathExecutor;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -52,6 +57,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     //  in an actual test case
     private HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>> targetPaths = new HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>>();
 
+    // Used to check feasibility of target paths
+    SymbolicExecutor symbolicExecutor;
     // Used to generate any new target paths encountered
     PathGenerator pathGenerator;
     int maxDepth;
@@ -88,15 +95,27 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             var paths = pathGenerator.GeneratePaths(cfg);
             logger.debug("CFG: {}", cfg);
             logger.info("Added {} path targets", paths.size());
+            // initialize symbolic executor if necessary
+            if (this.symbolicExecutor == null) {
+                ConcreteExecutor concrete = new ConcreteExecutor();
+                SymbolicStateValidator validator = new SymbolicStateValidator();
+                JavaAnalyzer analyzer = JavaAnalyzer.getInstance();
+                this.symbolicExecutor = new SymbolicExecutor(concrete, validator, analyzer, false, false, false);
+            }
             for (var path: paths)
             {
-                logger.debug("Added path: {}", path);
+                // Check if path is feasible
+                if (!PathExecutor.executePath(symbolicExecutor, path, target.getMethod())) {
+                    logger.debug("Path is infeasible: {}", path);
+                    continue;
+                }
                 tree1.insert(path);
                 // We do not require every prime path in the constructor to be
                 // covered, only for it to be discovered so other functions can
                 // be tested using the state
                 if (!target.isCtorState())
                     tree2.insert(path);
+                logger.debug("Added path: {}", path);
             }
         }
         targets.add(target);

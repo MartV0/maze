@@ -129,6 +129,21 @@ public class SymbolicState implements SearchTarget {
         this.statementHistory = new ArrayList<>();
     }
 
+    // Same as above constructor but can specify a different starting statement
+    public SymbolicState(JavaSootMethod method, StmtGraph<?> cfg, Stmt startingStmt) {
+        this.method = method;
+        this.cfg = cfg;
+        this.stmt = startingStmt;
+        this.store = new HashMap<>();
+        this.heap = new SymbolicHeap(this);
+        this.pathConstraints = new ArrayList<>();
+        this.engineConstraints = new ArrayList<>();
+        this.paramTypes = new HashMap<>();
+        this.newCoverageDepths = new ArrayList<>();
+        this.branchHistory = new ArrayList<>();
+        this.statementHistory = new ArrayList<>();
+    }
+
     /*
      * Create a new symbolic state by copying all relevant fields from the other
      * state given.
