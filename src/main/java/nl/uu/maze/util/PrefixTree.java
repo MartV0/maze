@@ -24,6 +24,15 @@ public class PrefixTree<T> {
         public TrieNode () {
             children = new HashMap<T, TrieNode>();
         }
+
+        public int size() {
+            int total = 0;
+            if (isList) total++;
+            for (TrieNode child: children.values()) {
+                total += child.size();
+            }
+            return total;
+        }
     }
 
     private TrieNode root;
@@ -148,5 +157,9 @@ public class PrefixTree<T> {
 
     public Set<T> initialElements() {
         return root.children.keySet();
+    }
+
+    public int size() {
+        return this.root.size();
     }
 }

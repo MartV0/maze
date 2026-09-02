@@ -189,11 +189,20 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             logger.debug("Returning next state reaching target path");
             return nextState3;
         } else {
-            logger.debug("No state can reach a target path anymore, exiting");
+            logger.info("No state can reach a target path anymore, exiting");
+            logger.info("{} Uncovered target paths", uncoveredPaths());
             // Make sure to clear targets, otherwise MAZE might still generate test cases for them
             targets.clear();
             return null;
         }
+    }
+
+    private int uncoveredPaths() {
+        int total = 0;
+        for (var paths: targetPaths.values()) {
+            total += paths.second().size();
+        }
+        return total;
     }
 
     /** try to find a state from which a target path can be reached */
