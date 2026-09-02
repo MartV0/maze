@@ -21,25 +21,35 @@ public class PathExecutor {
         path = expandPathBackward(path, method);        
         SymbolicStateValidator validator = new SymbolicStateValidator();
         SymbolicState symbolicState = initializeState(path, method);
-        for (int i = 1; i < path.size(); i++) {
-            List<SymbolicState> newStates = executor.step(symbolicState, false);
-            boolean foundNext = false;
-            // try to find a successor state which matches the next statement in the path
-            for (int j = 0; j < newStates.size(); j++) {
-                if (newStates.get(j).getStmt() == path.get(i)) {
-                    symbolicState = newStates.get(j);
-                    foundNext = true;
-                    break;
-                }
-            }
-            if (!foundNext) {
-                return false;
-            }
+        return followPath(executor, path, 0, symbolicState, validator);
+    }
+
+    // Uses depht first search to follow the given path.
+    // DFS is required because even within a given path the state can still fork
+    // on aliases and array accesses.
+    static boolean followPath(SymbolicExecutor executor, List<Stmt> path, int index, SymbolicState state, SymbolicStateValidator validator) {
+        assert(path.get(index) == state.getStmt());
+        List<SymbolicState> newStates = executor.step(state, false);
+        // base case: check if the final stmt had any successors
+        if (index == path.size() - 1) {
+            assert newStates.stream().anyMatch(newState -> validator.validate(newState).isPresent()) == newStates.size() >= 1;
+            return newStates.size() >= 1;
         }
-        // Execute final stmt in path
-        List<SymbolicState> newStates = executor.step(symbolicState, false);
-        assert newStates.stream().anyMatch(state -> validator.validate(state).isPresent()) == newStates.size() >= 1;
-        return newStates.size() >= 1;
+        // recursive case: check if any of the successors follow the path to a feasible state
+        return newStates.stream()
+            .filter(newState -> !newState.isFinalState())
+            .anyMatch(newState -> {
+                Stmt stmt = newState.getStmt();
+                // It is possible we are still on the same stmt after a execution
+                // step when the state forks on an alias
+                if (stmt == path.get(index)){
+                    return followPath(executor, path, index, newState, validator);
+                }
+                else if (stmt == path.get(index + 1)){
+                    return followPath(executor, path, index + 1, newState, validator);
+                }
+                return false;
+            });
     }
 
     /** expands the given path backwards as long as there is only one predecessor */

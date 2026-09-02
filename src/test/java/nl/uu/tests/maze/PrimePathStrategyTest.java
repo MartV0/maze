@@ -116,28 +116,36 @@ public class PrimePathStrategyTest {
 			"goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto",
 			"if $stack3 != 0, r = r + i, goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0",
 			"if $stack3 != 0, r = r + 1, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0",
-			//"goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto",
 			"max := @parameter0: int, r = 0, i = 0, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1, goto",
-			//"max := @parameter0: int, r = 0, i = 0, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto",
 			"max := @parameter0: int, r = 0, i = 0, if i >= max, return r",
 			"r = r + 1, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto",
-			//"r = r + 1, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1",
 			"i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1",
 			"i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1",
 			"$stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1, goto, if i >= max, $stack3 = i % 2",
 			"$stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1, goto, if i >= max, return r",
 			"$stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto, if i >= max, $stack3 = i % 2",
 			"$stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto, if i >= max, return r",
-			//"r = r + i, goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i",
 			"r = r + i, goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1",
 			"if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto, i = i + 1, goto, if i >= max",
 			"if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto, if i >= max",
+		};
+
+		String[] infeasiblePaths = {
+			"r = r + i, goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i",
+			"r = r + 1, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1",
+			"max := @parameter0: int, r = 0, i = 0, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + 1, i = i + 1, goto",
+			"goto, i = i + 1, goto, if i >= max, $stack3 = i % 2, if $stack3 != 0, r = r + i, goto",
 		};
 
 		// Assert all prime paths have been covered
 		for (String primePath: primePaths) {
 			// System.out.println(primePath);
 			assertTrue(interceptor.anyMatch(msg -> msg.contains("Covered:") && msg.contains(primePath)));
+		}
+
+		// Assert all infeasible paths were pruned
+		for (String infeasiblePath: infeasiblePaths) {
+			assertTrue(interceptor.anyMatch(msg -> msg.contains("Path is infeasible:") && msg.contains(infeasiblePath)));
 		}
 
 		// shouldn't happen if infeasible paths are handled well
