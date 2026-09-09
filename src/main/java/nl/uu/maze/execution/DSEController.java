@@ -120,7 +120,7 @@ public class DSEController {
         this.concrete = new ConcreteExecutor();
         this.validator = new SymbolicStateValidator();
         this.symbolic = new SymbolicExecutor(concrete, validator, analyzer, searchStrategy.requiresCoverageData(),
-                searchStrategy.requiresBranchHistoryData(), searchStrategy.requiresStatementHistoryData());
+                searchStrategy.requiresBranchHistoryData(), searchStrategy.requiresStatementHistoryData(), searchStrategy.requiresFullStatementHistoryData());
         this.generator = new JUnitTestGenerator(targetJUnit4, analyzer, concrete, testTimeout, packageName);
     }
 

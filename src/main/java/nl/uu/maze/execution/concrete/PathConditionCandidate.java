@@ -2,6 +2,7 @@ package nl.uu.maze.execution.concrete;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.UnsupportedOperationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import nl.uu.maze.execution.symbolic.PathConstraint;
 import nl.uu.maze.execution.symbolic.SymbolicState;
 import nl.uu.maze.execution.symbolic.PathConstraint.*;
+import nl.uu.maze.execution.symbolic.FullStmtHistory;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.util.Pair;
 import sootup.core.graph.StmtGraph;
@@ -170,5 +172,10 @@ public class PathConditionCandidate implements SearchTarget {
             result = 31 * result + (constraint == null ? 0 : constraint.hashCode());
         }
         return result;
+    }
+
+    @Override
+    public FullStmtHistory getFullStatementHistory() {
+        throw new UnsupportedOperationException("fullStatementHistory not supported on concrete mode");
     }
 }

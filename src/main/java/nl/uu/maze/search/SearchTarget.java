@@ -4,6 +4,7 @@ import java.util.List;
 
 import nl.uu.maze.execution.symbolic.PathConstraint;
 import nl.uu.maze.util.Pair;
+import nl.uu.maze.execution.symbolic.FullStmtHistory;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.java.core.JavaSootMethod;
@@ -64,6 +65,12 @@ public interface SearchTarget {
      * to this target.
      */
     List<Stmt> getStatementHistory();
+
+    /**
+     * Returns a full history of statements that were executed along the path
+     * leading to this target.
+     */
+    FullStmtHistory getFullStatementHistory();
 
     /**
      * Returns the call depth (number of nested function calls) of the target.

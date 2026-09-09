@@ -100,7 +100,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                 ConcreteExecutor concrete = new ConcreteExecutor();
                 SymbolicStateValidator validator = new SymbolicStateValidator();
                 JavaAnalyzer analyzer = JavaAnalyzer.getInstance();
-                this.symbolicExecutor = new SymbolicExecutor(concrete, validator, analyzer, false, false, false);
+                this.symbolicExecutor = new SymbolicExecutor(concrete, validator, analyzer, false, false, false, false);
             }
             for (var path: paths)
             {

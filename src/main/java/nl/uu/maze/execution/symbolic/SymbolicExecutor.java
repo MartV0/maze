@@ -13,6 +13,7 @@ import nl.uu.maze.analysis.JavaAnalyzer;
 import nl.uu.maze.execution.EngineConfiguration;
 import nl.uu.maze.execution.concrete.ConcreteExecutor;
 import nl.uu.maze.execution.symbolic.PathConstraint.*;
+import nl.uu.maze.execution.symbolic.FullStmtHistory;
 import nl.uu.maze.instrument.TraceManager;
 import nl.uu.maze.instrument.TraceManager.TraceEntry;
 import nl.uu.maze.main.cli.MazeCLI;
@@ -42,14 +43,16 @@ public class SymbolicExecutor {
     private final boolean trackCoverage;
     private final boolean trackBranchHistory;
     private final boolean trackStatementHistory;
+    private final boolean trackFullStatementHistory;
 
     public SymbolicExecutor(ConcreteExecutor executor, SymbolicStateValidator validator,
-            JavaAnalyzer analyzer, boolean trackCoverage, boolean trackBranchHistory, boolean trackStatementHistory) {
+            JavaAnalyzer analyzer, boolean trackCoverage, boolean trackBranchHistory, boolean trackStatementHistory, boolean trackFullStatementHistory) {
         this.methodInvoker = new MethodInvoker(executor, validator, analyzer);
         this.validator = validator;
         this.trackCoverage = trackCoverage;
         this.trackBranchHistory = trackBranchHistory;
         this.trackStatementHistory = trackStatementHistory;
+        this.trackFullStatementHistory = trackFullStatementHistory;
     }
 
     /**
@@ -78,6 +81,8 @@ public class SymbolicExecutor {
                 state.recordCoverage();
             if (trackStatementHistory)
                 state.recordStatement();
+            if (trackFullStatementHistory)
+                state.recordStatementFull();
             switch (stmt) {
                 case JIfStmt jIfStmt -> {
                     return handleIfStmt(jIfStmt, state, replay);
@@ -475,7 +480,9 @@ public class SymbolicExecutor {
                 state.setFinalState();
                 return List.of(state);
             }
+            FullStmtHistory calleeHistory = state.getFullStatementHistory();
             SymbolicState caller = state.returnToCaller();
+            if (trackFullStatementHistory) caller.getFullStatementHistory().addCallHistory(calleeHistory);
 
             // If the caller state is a definition statement, we still need to complete the
             // assignment using the return value of the method that just finished execution

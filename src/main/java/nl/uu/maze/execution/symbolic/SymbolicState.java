@@ -14,6 +14,7 @@ import nl.uu.maze.util.Pair;
 import nl.uu.maze.util.Z3ContextProvider;
 import nl.uu.maze.util.Z3Sorts;
 import nl.uu.maze.execution.symbolic.PathConstraint.SingleConstraint;
+import nl.uu.maze.execution.symbolic.FullStmtHistory;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.util.BranchHistory;
 import sootup.core.graph.StmtGraph;
@@ -93,6 +94,11 @@ public class SymbolicState implements SearchTarget {
      * path leading to this state. */
     private final List<Stmt> statementHistory;
     /**
+     * Tracks the full statement history: which statements were executed along
+     * the path leading to this state. Including any statement history from
+     * function calls */
+    private FullStmtHistory fullStatementHistory;
+    /**
      * The iteration at which this state was added to the search strategy.
      */
     private int iteration = -1;
@@ -127,6 +133,7 @@ public class SymbolicState implements SearchTarget {
         this.newCoverageDepths = new ArrayList<>();
         this.branchHistory = new ArrayList<>();
         this.statementHistory = new ArrayList<>();
+        this.fullStatementHistory = new FullStmtHistory();
     }
 
     // Same as above constructor but can specify a different starting statement
@@ -142,6 +149,7 @@ public class SymbolicState implements SearchTarget {
         this.newCoverageDepths = new ArrayList<>();
         this.branchHistory = new ArrayList<>();
         this.statementHistory = new ArrayList<>();
+        this.fullStatementHistory = new FullStmtHistory();
     }
 
     /*
@@ -169,6 +177,7 @@ public class SymbolicState implements SearchTarget {
         this.newCoverageDepths = new ArrayList<>(state.newCoverageDepths);
         this.branchHistory = new ArrayList<>(state.branchHistory);
         this.statementHistory = new ArrayList<>(state.statementHistory);
+        this.fullStatementHistory = new FullStmtHistory(state.fullStatementHistory);
 
         this.isCtorState = state.isCtorState;
         this.isFinalState = state.isFinalState;
@@ -193,6 +202,13 @@ public class SymbolicState implements SearchTarget {
         // corresponds to the history of the method
         branchHistory.clear();
         statementHistory.clear();
+        FullStmtHistory newFullHistory = new FullStmtHistory();
+        // Not really a function call, but good to keep track of the contructor
+        // stmt history
+        if (!fullStatementHistory.currentHistoryEmpty()) {
+            newFullHistory.addCallHistory(fullStatementHistory);
+        }
+        fullStatementHistory = newFullHistory;
     }
 
     public MethodType getMethodType() {
@@ -406,6 +422,15 @@ public class SymbolicState implements SearchTarget {
     }
 
     /**
+     * Records the current statement in to the full history.
+     * This is used for statement history tracking.
+     */
+    public void recordStatementFull() {
+        fullStatementHistory.addStmt(stmt);
+    }
+
+
+    /**
      * Record a branch taken.
      * This is used for branch history tracking.
      * The branch is encoded by hashing the statement and the index of the
@@ -426,6 +451,10 @@ public class SymbolicState implements SearchTarget {
 
     public List<Stmt> getStatementHistory() {
         return statementHistory;
+    }
+
+    public FullStmtHistory getFullStatementHistory() {
+        return fullStatementHistory;
     }
 
     public void setIteration(int iteration) {
