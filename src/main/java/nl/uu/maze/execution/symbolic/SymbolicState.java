@@ -133,7 +133,7 @@ public class SymbolicState implements SearchTarget {
         this.newCoverageDepths = new ArrayList<>();
         this.branchHistory = new ArrayList<>();
         this.statementHistory = new ArrayList<>();
-        this.fullStatementHistory = new FullStmtHistory();
+        this.fullStatementHistory = new FullStmtHistory(cfg);
     }
 
     // Same as above constructor but can specify a different starting statement
@@ -149,7 +149,7 @@ public class SymbolicState implements SearchTarget {
         this.newCoverageDepths = new ArrayList<>();
         this.branchHistory = new ArrayList<>();
         this.statementHistory = new ArrayList<>();
-        this.fullStatementHistory = new FullStmtHistory();
+        this.fullStatementHistory = new FullStmtHistory(cfg);
     }
 
     /*
@@ -202,7 +202,7 @@ public class SymbolicState implements SearchTarget {
         // corresponds to the history of the method
         branchHistory.clear();
         statementHistory.clear();
-        FullStmtHistory newFullHistory = new FullStmtHistory();
+        FullStmtHistory newFullHistory = new FullStmtHistory(cfg);
         // Not really a function call, but good to keep track of the contructor
         // stmt history
         if (!fullStatementHistory.currentHistoryEmpty()) {
@@ -232,6 +232,7 @@ public class SymbolicState implements SearchTarget {
         this.method = method;
         this.cfg = cfg;
         setStmt(cfg.getStartingStmt());
+        fullStatementHistory.setCFG(cfg);
     }
 
     public StmtGraph<?> getCFG() {

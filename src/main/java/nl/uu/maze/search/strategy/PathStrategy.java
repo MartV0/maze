@@ -87,8 +87,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     public void add(T target) {
         var cfg = target.getCFG();
         // if it is the first time seeing this cfg, generate target paths for it
-        // we only generate target paths for the top level functions
-        if (!targetPaths.containsKey(cfg) && target.getCallDepth() == 0) {
+        if (!targetPaths.containsKey(cfg)) {
             var tree1 = new PrefixTree<Stmt>();
             var tree2 = new PrefixTree<Stmt>();
             targetPaths.put(cfg, new Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>(tree1, tree2));
@@ -110,11 +109,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                     continue;
                 }
                 tree1.insert(path);
-                // We do not require every prime path in the constructor to be
-                // covered, only for it to be discovered so other functions can
-                // be tested using the state
-                if (!target.isCtorState())
-                    tree2.insert(path);
+                tree2.insert(path);
                 logger.debug("Added path: {}", path);
             }
         }
@@ -122,25 +117,34 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     @Override
-    public boolean requiresStatementHistoryData() {
+    public boolean requiresFullStatementHistoryData() {
         return true;
     }
 
     @Override
     public boolean generatedTestCase(SymbolicState state) {
-        var paths = targetPaths.get(state.getCFG());
         logger.debug("Covered depth: {}", state.getDepth());
-        // Remove covered paths from the set of paths that still need to be tested
-        if(!paths.second().removeSublists(state.getStatementHistory())){
-            logger.debug("Ignored: {}", state.getStatementHistory());
-            logger.warn("Generated test case doesn't cover any target path");
-            return false;
-        } 
-        else {
-            logger.debug("Covered: {}", state.getStatementHistory());
-            logger.debug("Covered prime path");
-            return true;
+        var historys = state.getFullStatementHistory().getAllHistorys();
+        // Whether this state covers any target paths
+        boolean coverage = false;
+        for (var history: historys) {
+            var paths = targetPaths.get(history.second());
+            // Remove covered paths from the set of paths that still need to be tested
+            if(paths.second().removeSublists(state.getFullStatementHistory().getCurrentHistory())){
+                coverage = true;
+            }
         }
+
+        if (coverage) logger.debug("Covered prime path(s)");
+        else logger.warn("Final state doesn't cover any target paths, ignoring...");
+
+        if (logger.isDebugEnabled()) {
+            String fmtString = coverage ? "Covered: {}" : "Ignored: {}";
+            for (var history: historys) {
+                logger.debug(fmtString, history.first());
+            }
+        }
+        return coverage;
     }
 
     @Override
@@ -167,7 +171,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         if (nextState != null) {
             logger.debug("Returning next undiscovered state");
             // Copy the history and add the current statement to it so the history is complete
-            var completeHistory = new ArrayList<Stmt>(nextState.getStatementHistory());
+            var completeHistory = new ArrayList<Stmt>(nextState.getFullStatementHistory().getCurrentHistory());
             completeHistory.add(nextState.getStmt());
             targetPaths.get(nextState.getCFG()).first().removeSublists(completeHistory);
             return nextState;
@@ -207,17 +211,23 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     /** try to find a state from which a target path can be reached */
     private T nextStateReachingTargetPath() {
+        // Accumulate first statements of all target paths
+        ArrayList<Stmt> undiscoveredFirstStmts = new ArrayList<Stmt>();
+        targetPaths.values().forEach(
+                paths -> paths.first().initialElements().forEach(stmt ->
+                    undiscoveredFirstStmts.add(stmt)
+                )
+            );
         if (pathFinding == SearchOrder.Heuristic) {
+            // Find next state based on distance to first stmt of target paths
             return nextStateHeuristic(target -> {
-                var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
                 return distanceToScore(target, stmt -> undiscoveredFirstStmts.contains(stmt));
             });
         }
         else {
             return nextState(pathFinding, target -> {
-                // First statements of all the undiscovered paths
-                var undiscoveredFirstStmts = targetPaths.get(target.getCFG()).first().initialElements();
                 int maxDistance = maxDepth - target.getDepth();
+                // Find state that can reach first stmt of target paths
                 if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> undiscoveredFirstStmts.contains(stmt)) != -1)
                     return true;
                 return false;
@@ -229,9 +239,14 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
      * of an undiscovered target path */
     private T nextUndiscoveredState() {
         return nextState(pathExploration, target -> {
-            var paths = targetPaths.get(target.getCFG());
-            if (paths == null) return false;
-            return target.getCallDepth() == 0 && paths.first().containsPrefix(target.getStatementHistory());
+            SearchTarget[] callstack = target.getCallStack();
+            for (SearchTarget frame: callstack) {
+                var paths = targetPaths.get(frame.getCFG());
+                if (paths == null) continue;
+                if(paths.first().containsPrefix(frame.getFullStatementHistory().getCurrentHistory()))
+                    return true;
+            }
+            return false;
         });
     }
 
@@ -241,20 +256,35 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         if (pathFinishing == SearchOrder.Heuristic) {
             // Heuristic that prioritises states which are closer to terminal states
             return nextStateHeuristic(
-                target -> distanceToScore(
-                    target,
-                    // matches terminal statements
-                    stmt -> target.getCFG().successors(stmt).size() == 0
-                )
+                target -> { 
+                    if (!stateContainsTargetPath(target)) return 0.;
+                    return distanceToScore(
+                        target,
+                        // matches terminal statements
+                        stmt -> target.getCFG().successors(stmt).size() == 0
+                    );
+                }
             );
         }
         else {
             return nextState(pathFinishing, target -> {
-                var paths = targetPaths.get(target.getCFG());
-                if (paths == null) return false;
-                return target.getCallDepth() == 0 && paths.second().containsSublist(target.getStatementHistory());
+                return stateContainsTargetPath(target);
             });
         }
+    }
+
+    /** Returns true iff state contains a target path as a subpath somewhere in
+     * its history */
+    private boolean stateContainsTargetPath(T target) {
+        for (SearchTarget frame: target.getCallStack()) {
+            for (var history: frame.getFullStatementHistory().getAllHistorys()) {
+                var paths = targetPaths.get(history.second());
+                if (paths == null) continue;
+                if (paths.second().containsSublist(target.getFullStatementHistory().getCurrentHistory()))
+                    return true;
+            }
+        }
+        return false;
     }
 
     /** Scores a target based on how close it it to a statement satisfying the predicate */
