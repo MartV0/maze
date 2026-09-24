@@ -110,6 +110,9 @@ public abstract class SearchStrategy<T extends SearchTarget> {
         return true;
     }
 
+    /** Used to inform search strategy maze is done executing */
+    public void executionFinished() {}
+
     /**
      * Attempts to convert this search strategy to a symbolic-driven search
      * strategy.

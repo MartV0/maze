@@ -45,7 +45,9 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         var cfg = target.getCFG();
         if (!basisSets.containsKey(cfg)) {
             logger.debug("Added: {}", target.getCFG());
-            basisSets.put(cfg, new BasisSet(cfg));
+            BasisSet basis = new BasisSet(cfg);
+            logger.info("Added new target with cyclomatic complexity {}", basis.cyclomaticComplexity);
+            basisSets.put(cfg, basis);
         }
         targets.add(target);
     }
@@ -143,6 +145,15 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         return true;
     }
 
+    @Override
+    public void executionFinished() {
+        int missing = 0;
+        for (var set: basisSets.values()) {
+            missing += set.cyclomaticComplexity - set.basisSet.size();
+        }
+        logger.info("{} too few independent paths in basis sets", missing);
+    }
+
     class BasisSet {
         int cyclomaticComplexity;
         // determines which columns represent which branches when representing a path as a vector
@@ -228,6 +239,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             boolean independent = set.rank() == columns;
             if (independent) {
                 basisSet.add(newVector);
+                logger.info("Found new independent vector");
                 logger.debug("Added vector {}", newVector);
             }
             return independent;
