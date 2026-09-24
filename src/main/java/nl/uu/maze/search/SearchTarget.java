@@ -8,6 +8,7 @@ import nl.uu.maze.execution.symbolic.FullStmtHistory;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.java.core.JavaSootMethod;
+import sootup.java.core.JavaSootClass;
 
 /**
  * Interface representing a target for the search process in the DSE engine.
@@ -35,6 +36,11 @@ public interface SearchTarget {
      * Returns the soot method that the target is part of.
      */
     JavaSootMethod getMethod();
+
+    /**
+     * Returns the soot class that the target is part of.
+     */
+    JavaSootClass getSootClass();
 
     /**
      * Returns the constraints that are associated with the target.

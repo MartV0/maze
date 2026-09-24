@@ -33,6 +33,7 @@ import sootup.core.types.ClassType;
 import sootup.core.types.Type;
 import sootup.core.types.VoidType;
 import sootup.java.core.JavaSootMethod;
+import sootup.java.core.JavaSootClass;
 
 /**
  * Responsible for executing method calls, symbolically if the class is
@@ -115,7 +116,7 @@ public class MethodInvoker {
     private Optional<SymbolicState> executeSymbolic(SymbolicState state, JavaSootMethod method, AbstractInvokeExpr expr,
             Local base) {
         // Create a fresh state that will enter the method call
-        SymbolicState callee = new SymbolicState(method, analyzer.getCFG(method));
+        SymbolicState callee = new SymbolicState(method, analyzer.getCFG(method), state.getSootClass());
         callee.setCaller(state);
         // Also set the constraints to be the same as the caller state
         // This will copy references, so original constraints will be modified if the

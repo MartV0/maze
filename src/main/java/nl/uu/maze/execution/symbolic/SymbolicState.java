@@ -25,6 +25,7 @@ import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.Type;
 import sootup.java.core.JavaSootMethod;
+import sootup.java.core.JavaSootClass;
 
 /**
  * Represents a symbolic state in the symbolic execution engine.
@@ -48,6 +49,7 @@ public class SymbolicState implements SearchTarget {
     private static final CoverageTracker coverageTracker = CoverageTracker.getInstance();
 
     private JavaSootMethod method;
+    private JavaSootClass sootClass;
     private StmtGraph<?> cfg;
     private Stmt stmt;
     private Stmt prevStmt = null;
@@ -121,8 +123,9 @@ public class SymbolicState implements SearchTarget {
     /** Indicates whether the state's constraints were found to be unsatisfiable. */
     private boolean isInfeasible = false;
 
-    public SymbolicState(JavaSootMethod method, StmtGraph<?> cfg) {
+    public SymbolicState(JavaSootMethod method, StmtGraph<?> cfg, JavaSootClass sootClass) {
         this.method = method;
+        this.sootClass = sootClass;
         this.cfg = cfg;
         this.stmt = cfg.getStartingStmt();
         this.store = new HashMap<>();
@@ -137,8 +140,9 @@ public class SymbolicState implements SearchTarget {
     }
 
     // Same as above constructor but can specify a different starting statement
-    public SymbolicState(JavaSootMethod method, StmtGraph<?> cfg, Stmt startingStmt) {
+    public SymbolicState(JavaSootMethod method, StmtGraph<?> cfg, Stmt startingStmt, JavaSootClass sootClass) {
         this.method = method;
+        this.sootClass = sootClass;
         this.cfg = cfg;
         this.stmt = startingStmt;
         this.store = new HashMap<>();
@@ -158,6 +162,7 @@ public class SymbolicState implements SearchTarget {
      */
     private SymbolicState(SymbolicState state) {
         this.method = state.method;
+        this.sootClass = state.sootClass;
         this.cfg = state.cfg;
         this.stmt = state.stmt;
         this.prevStmt = state.prevStmt;
@@ -241,6 +246,10 @@ public class SymbolicState implements SearchTarget {
 
     public JavaSootMethod getMethod() {
         return method;
+    }
+
+    public JavaSootClass getSootClass() {
+        return sootClass;
     }
 
     public MethodSignature getMethodSignature() {

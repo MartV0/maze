@@ -9,18 +9,19 @@ import sootup.core.jimple.common.ref.*;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.graph.StmtGraph;
 import sootup.java.core.JavaSootMethod;
+import sootup.java.core.JavaSootClass;
 
 import nl.uu.maze.transform.JimpleToZ3Transformer;
 
 /** Can execute a path in isolation */
 public class PathExecutor {
     /** Symbolically executes the given path and returns whether or not the path is feasible */
-    public static boolean executePath(SymbolicExecutor executor, List<Stmt> path, JavaSootMethod method) {
+    public static boolean executePath(SymbolicExecutor executor, List<Stmt> path, JavaSootMethod method, JavaSootClass sootClass) {
         // expand the path backward, thus adding more context to the path, which can 
         // help detect additional infeasible paths
         path = expandPathBackward(path, method);        
         SymbolicStateValidator validator = new SymbolicStateValidator();
-        SymbolicState symbolicState = initializeState(path, method);
+        SymbolicState symbolicState = initializeState(path, method, sootClass);
         return followPath(executor, path, 0, symbolicState, validator);
     }
 
@@ -65,8 +66,8 @@ public class PathExecutor {
 
     /** Creates a new symbolic state starting in the first statement of path and
       * initializing any variables that are used in the path */
-    static SymbolicState initializeState(List<Stmt> path, JavaSootMethod method) {
-        SymbolicState symbolicState = new SymbolicState(method, method.getBody().getStmtGraph(), path.get(0));
+    static SymbolicState initializeState(List<Stmt> path, JavaSootMethod method, JavaSootClass sootClass) {
+        SymbolicState symbolicState = new SymbolicState(method, method.getBody().getStmtGraph(), path.get(0), sootClass);
         symbolicState.switchToMethodState();
         for(Stmt stmt: path) {
             stmt.getUses().forEach(value -> {

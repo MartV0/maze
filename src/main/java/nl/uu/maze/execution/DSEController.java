@@ -151,9 +151,8 @@ public class DSEController {
 
         // Organize methods under test into static and non-static, and filter out any
         // non-standard methods
-        Pattern pattern = Pattern.compile("<[^>]+>");
         for (JavaSootMethod method : methods) {
-            if (!method.isPublic() || pattern.matcher(method.getName()).matches()
+            if (methodNonStandard(method)
                     || (!methodName.equals("all") && !method.getName().equals(methodName))) {
                 continue;
             }
@@ -208,6 +207,12 @@ public class DSEController {
             }
             
         }
+    }
+
+    static Pattern pattern = Pattern.compile("<[^>]+>");
+
+    public static boolean methodNonStandard(JavaSootMethod method) {
+        return !method.isPublic() || pattern.matcher(method.getName()).matches();
     }
 
     /**
@@ -275,6 +280,7 @@ public class DSEController {
             // If any unfinished states are still in the strategy, generate test cases
             Collection<SymbolicState> states = strategy.getAll();
             if (states.isEmpty()) {
+                searchStrategy.executionFinished();
                 return;
             }
             logger.info("Generating test cases for remaining states in search strategy");
@@ -289,6 +295,7 @@ public class DSEController {
                 }
             }
         }
+        searchStrategy.executionFinished();
     }
 
     /**
@@ -313,13 +320,13 @@ public class DSEController {
         // If methods under test include non-static methods, need to execute constructor
         // as well
         if (!nonStaticMuts.isEmpty()) {
-            searchStrategy.add(new SymbolicState(ctorSoot, ctorCfg));
+            searchStrategy.add(new SymbolicState(ctorSoot, ctorCfg, sootClass));
         }
 
         // For static methods, we can start directly with the target method
         for (JavaSootMethod method : staticMuts) {
             // If the method is static, we can start directly with the target method
-            SymbolicState state = new SymbolicState(method, analyzer.getCFG(method));
+            SymbolicState state = new SymbolicState(method, analyzer.getCFG(method), sootClass);
             state.switchToMethodState();
             searchStrategy.add(state);
         }
@@ -432,7 +439,7 @@ public class DSEController {
 
         // For static methods, start at the target method
         if (method.isStatic()) {
-            initState = new SymbolicState(method, analyzer.getCFG(method));
+            initState = new SymbolicState(method, analyzer.getCFG(method), sootClass);
             initState.switchToMethodState();
         }
         // Otherwise, start with constructor
@@ -444,7 +451,7 @@ public class DSEController {
                 initState = initStates.get(pathHash).clone();
                 initState.setMethod(method, analyzer.getCFG(method));
             } else {
-                initState = new SymbolicState(ctorSoot, ctorCfg);
+                initState = new SymbolicState(ctorSoot, ctorCfg, sootClass);
             }
         }
 

@@ -15,6 +15,7 @@ import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.util.Pair;
 import sootup.core.graph.StmtGraph;
 import sootup.java.core.JavaSootMethod;
+import sootup.java.core.JavaSootClass;
 import sootup.core.jimple.common.stmt.Stmt;
 
 /**
@@ -91,6 +92,10 @@ public class PathConditionCandidate implements SearchTarget {
 
     public JavaSootMethod getMethod() {
         return constraints.get(index).getMethod();
+    }
+
+    public JavaSootClass getSootClass() {
+        return state.getSootClass();
     }
 
     public int getDepth() {

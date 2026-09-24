@@ -92,8 +92,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             var tree2 = new PrefixTree<Stmt>();
             targetPaths.put(cfg, new Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>(tree1, tree2));
             var paths = pathGenerator.GeneratePaths(cfg);
-            logger.debug("CFG: {}", cfg);
-            logger.info("Added {} path targets", paths.size());
+            int infeasible = 0;
             // initialize symbolic executor if necessary
             if (this.symbolicExecutor == null) {
                 ConcreteExecutor concrete = new ConcreteExecutor();
@@ -104,14 +103,16 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             for (var path: paths)
             {
                 // Check if path is feasible
-                if (!PathExecutor.executePath(symbolicExecutor, path, target.getMethod())) {
+                if (!PathExecutor.executePath(symbolicExecutor, path, target.getMethod(), target.getSootClass())) {
                     logger.debug("Path is infeasible: {}", path);
+                    infeasible++;
                     continue;
                 }
                 tree1.insert(path);
                 tree2.insert(path);
                 logger.debug("Added path: {}", path);
             }
+            logger.info("Added {} path targets, {} paths infeasible", paths.size() - infeasible, infeasible);
         }
         targets.add(target);
     }
@@ -135,8 +136,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             }
         }
 
-        if (coverage) logger.debug("Covered prime path(s)");
-        else logger.warn("Final state doesn't cover any target paths, ignoring...");
+        if (coverage) logger.info("Covered prime path(s)");
+        else logger.debug("Final state doesn't cover any target paths, ignoring...");
 
         if (logger.isDebugEnabled()) {
             String fmtString = coverage ? "Covered: {}" : "Ignored: {}";

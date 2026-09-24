@@ -12,6 +12,7 @@ import nl.uu.maze.analysis.JavaAnalyzer;
 import nl.uu.maze.execution.symbolic.CoverageTracker;
 import nl.uu.maze.search.SearchTarget;
 import nl.uu.maze.util.Pair;
+import nl.uu.maze.execution.DSEController;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 import sootup.core.jimple.common.stmt.JReturnStmt;
@@ -48,10 +49,10 @@ public class CFGDistance {
         for (int i = 0; i < callStack.length; i++) {
             SearchTarget frame = callStack[i];
             if (current == null) {
-                current = StmtDistance.create(frame.getStmt(), 0, frame.getCFG());
+                current = StmtDistance.create(frame.getStmt(), 0, frame.getMethod());
             } else {
                 // Create callee that points back to caller at the specific stmt
-                current = new StmtDistance(frame.getStmt(), 0, frame.getCFG(), current);
+                current = new StmtDistance(frame.getStmt(), 0, frame.getCFG(), current, frame.getMethod());
             }
         }
         worklist.offer(current);
@@ -100,6 +101,17 @@ public class CFGDistance {
                 if (caller != null) {
                     worklist.offer(caller);
                 }
+                // If caller
+                else if (start.isCtorState() && item.method == start.getMethod()) {
+                    Set<JavaSootMethod> methods = start.getSootClass().getMethods();
+                    for (var method: methods) {
+                        if (!DSEController.methodNonStandard(method) && !method.isStatic())
+                        {
+                            var cfg = method.getBody().getStmtGraph();
+                            worklist.offer(StmtDistance.create(cfg.getStartingStmt(), item.dist, method));
+                        }
+                    }
+                }
                 continue;
             }
 
@@ -114,28 +126,30 @@ public class CFGDistance {
     public static class StmtDistance {
         public final Stmt stmt;
         public final StmtGraph<?> cfg;
+        public final JavaSootMethod method;
         public final StmtDistance caller;
         public int dist;
         // Returning from a callee method to the caller
         public boolean returning;
 
-        private StmtDistance(Stmt stmt, int dist, StmtGraph<?> cfg, StmtDistance caller) {
+        private StmtDistance(Stmt stmt, int dist, StmtGraph<?> cfg, StmtDistance caller, JavaSootMethod method) {
             this.stmt = stmt;
             this.dist = dist;
             this.cfg = cfg;
             this.returning = false;
             this.caller = caller;
+            this.method = method;
         }
 
-        public static StmtDistance create(Stmt stmt, int dist, StmtGraph<?> cfg) {
-            return new StmtDistance(stmt, dist, cfg, null);
+        public static StmtDistance create(Stmt stmt, int dist, JavaSootMethod method) {
+            return new StmtDistance(stmt, dist, method.getBody().getStmtGraph(), null, method);
         }
 
         /**
          * Create a new StmtDistance instance from a successor statement.
          */
         public StmtDistance successor(Stmt stmt) {
-            return new StmtDistance(stmt, dist + 1, cfg, this.caller);
+            return new StmtDistance(stmt, dist + 1, cfg, this.caller, method);
         }
 
         /**
@@ -143,7 +157,7 @@ public class CFGDistance {
          * method.
          */
         public StmtDistance callee(StmtGraph<?> cfg) {
-            return new StmtDistance(cfg.getStartingStmt(), dist, cfg, this);
+            return new StmtDistance(cfg.getStartingStmt(), dist, cfg, this, method);
         }
 
         /**
