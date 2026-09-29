@@ -7,6 +7,7 @@ import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.common.ref.*;
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.jimple.common.stmt.JInvokeStmt;
 import sootup.core.graph.StmtGraph;
 import sootup.java.core.JavaSootMethod;
 import sootup.java.core.JavaSootClass;
@@ -30,6 +31,11 @@ public class PathExecutor {
     // on aliases and array accesses.
     static boolean followPath(SymbolicExecutor executor, List<Stmt> path, int index, SymbolicState state, SymbolicStateValidator validator) {
         assert(path.get(index) == state.getStmt());
+        // Don't follow function calls, as there can potentially be an infinite
+        // number of paths through the function, just return feasible as a default instead
+        if (state.getStmt().containsInvokeExpr()) {
+            return true;
+        }
         List<SymbolicState> newStates = executor.step(state, false);
         // base case: check if the final stmt had any successors
         if (index == path.size() - 1) {
