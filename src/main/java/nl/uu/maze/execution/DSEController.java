@@ -287,7 +287,7 @@ public class DSEController {
             for (SymbolicState state : states) {
                 // Check if we are over the time budget
                 if (System.currentTimeMillis() >= overallDeadline) {
-                    logger.info("Time budget exceeded while evaluating unifinished paths, stopping...");
+                    logger.info("Time budget exceeded while evaluating unfinished paths, stopping...");
                     break;
                 }
                 if (!state.isInfeasible()) {
