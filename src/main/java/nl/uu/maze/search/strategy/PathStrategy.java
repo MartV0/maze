@@ -126,14 +126,15 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     @Override
     public boolean generatedTestCase(SymbolicState state) {
         logger.debug("Covered depth: {}", state.getDepth());
-        var historys = state.getFullStatementHistory().getAllHistorys();
         // Whether this state covers any target paths
         boolean coverage = false;
-        for (var history: historys) {
-            var paths = targetPaths.get(history.second());
-            // Remove covered paths from the set of paths that still need to be tested
-            if(paths.second().removeSublists(state.getFullStatementHistory().getCurrentHistory())){
-                coverage = true;
+        for (SearchTarget frame: state.getCallStack()) {
+            for (var history: frame.getFullStatementHistory().getAllHistorys()) {
+                var paths = targetPaths.get(history.second());
+                // Remove covered paths from the set of paths that still need to be tested
+                if(paths.second().removeSublists(history.first())){
+                    coverage = true;
+                }
             }
         }
 
@@ -142,7 +143,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
         if (logger.isDebugEnabled()) {
             String fmtString = coverage ? "Covered: {}" : "Ignored: {}";
-            for (var history: historys) {
+            for (var history: state.getFullStatementHistory().getAllHistorys()) {
                 logger.debug(fmtString, history.first());
             }
         }
@@ -171,7 +172,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // First try to find a target path that hasn't been explored yet
         var nextState = nextUndiscoveredState();
         if (nextState != null) {
-            logger.debug("Returning next undiscovered state");
+            logger.trace("Returning next undiscovered state");
             // Copy the history and add the current statement to it so the history is complete
             var completeHistory = new ArrayList<Stmt>(nextState.getFullStatementHistory().getCurrentHistory());
             completeHistory.add(nextState.getStmt());
@@ -183,7 +184,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // test case generated for it yet
         var nextState2 = nextUncoveredInTests();
         if (nextState2 != null) {
-            logger.debug("Returning next uncovered test state");
+            logger.trace("Returning next uncovered test state");
             return nextState2;
         }
 
@@ -192,7 +193,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         // beginning of a target path
         var nextState3 = nextStateReachingTargetPath();
         if (nextState3 != null) {
-            logger.debug("Returning next state reaching target path");
+            logger.trace("Returning next state reaching target path");
             return nextState3;
         } else {
             logger.info("No state can reach a target path anymore, exiting");
