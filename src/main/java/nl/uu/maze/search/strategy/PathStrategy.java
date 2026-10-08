@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -222,14 +223,14 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         if (pathFinding == SearchOrder.Heuristic) {
             // Find next state based on distance to first stmt of target paths
             return nextStateHeuristic(target -> {
-                return distanceToScore(target, stmt -> undiscoveredFirstStmts.contains(stmt));
+                return distanceToScore(target, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt));
             });
         }
         else {
             return nextState(pathFinding, target -> {
                 int maxDistance = maxDepth - target.getDepth();
                 // Find state that can reach first stmt of target paths
-                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmt -> undiscoveredFirstStmts.contains(stmt)) != -1)
+                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt)) != -1)
                     return true;
                 return false;
             });
@@ -262,7 +263,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                     return distanceToScore(
                         target,
                         // matches terminal statements
-                        stmt -> target.getCFG().successors(stmt).size() == 0
+                        (stmt, cfg) -> cfg.successors(stmt).size() == 0
                     );
                 }
             );
@@ -289,7 +290,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     /** Scores a target based on how close it it to a statement satisfying the predicate */
-    private double distanceToScore(T target, Predicate<Stmt> predicate) {
+    private double distanceToScore(T target, BiPredicate<Stmt, StmtGraph<?>> predicate) {
         int maxDistance = maxDepth - target.getDepth();
         // Calculates the distance to first matching statement
         int distance = CFGDistance.calculateDistance(
@@ -297,7 +298,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             maxDistance, 
             false, 
             -1,
-            stmt -> predicate.test(stmt)
+            (stmt, cfg) -> predicate.test(stmt, cfg)
         );
         if (distance == -1) {
             return 0;

@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import nl.uu.maze.analysis.JavaAnalyzer;
 import nl.uu.maze.execution.symbolic.CoverageTracker;
@@ -32,7 +32,7 @@ public class CFGDistance {
 
     /** Calculates the shortest distance to a statement satisfying the given
      * predicate starting from 'start' */
-    public static <T extends SearchTarget> int calculateDistance(T start, int max_distance, boolean prioritize_final, int default_value, Predicate<Stmt> predicate) {
+    public static <T extends SearchTarget> int calculateDistance(T start, int max_distance, boolean prioritize_final, int default_value, BiPredicate<Stmt, StmtGraph<?>> predicate) {
         // Prioritize final statements (usually return statements)
         // Because we want to finish the path (or return to caller) asap
         if (prioritize_final && start.getCFG().outDegree(start.getStmt()) == 0) {
@@ -73,7 +73,7 @@ public class CFGDistance {
             // If we reach an uncovered statement, return the distance
             // Because the worklist is FIFO, the first uncovered statement we reach is the
             // closest one
-            if (predicate.test(item.stmt)) {
+            if (predicate.test(item.stmt, item.cfg)) {
                 return item.dist;
             }
 

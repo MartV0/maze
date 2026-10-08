@@ -16,9 +16,11 @@ public class BranchHistory {
      * For example if we have: if (a) b(); if (c) d();
      * And we have the path b(); if (c) d(); we return [if(true), if(true)]
      * Even though the first if wasn't in the path, but it is needed to reach b()
-     * Sometimes a statement can have multiple predecessors, these*/
+     * Sometimes a statement can have multiple predecessors, these are not
+     * included as it is ambiguous. */
     public static ArrayList<Integer> ConvertPathToBranchHistory(List<Stmt> path, StmtGraph<?> cfg){
         var history = new ArrayList<Integer>();
+        if (path.size() <= 0) return history;
         Integer preceding;
         if (cfg.successors(path.get(0)).size() <= 1 
             && (preceding = FindFirstPrecedingBranch(path.get(0), cfg)) != null) {

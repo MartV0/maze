@@ -66,31 +66,62 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         }
         // First try to find a state with an uncovered branch in the history
         for (T target: targets) {
-            var basisset = basisSets.get(target.getCFG());
-            if (target.getCallDepth() == 0 && basisset.containsUncoveredBranch(target.getBranchHistory())) {
+            if (stateContainsUncoveredBranch(target)) {
                 targets.remove(target);
-                logger.debug("returning uncovered state");
+                logger.trace("returning uncovered state");
                 return target;
             }
         }
         // Second try to find a state that can reach an uncovered branch
         for (T target: targets) {
-            var basisset = basisSets.get(target.getCFG());
-            if (target.getCallDepth() == 0 && basisset.canReachUncoveredBranch(target, maxDepth)) {
+            if (stateReachesUncoveredBranch(target)) {
                 targets.remove(target);
-                logger.debug("returning reachable state");
+                logger.trace("returning reachable state");
                 return target;
             }
         }
         logger.debug("returning next state");
         // If no such states are found, return first target
         if (targets.isEmpty()) {
-            logger.debug("Search space exhausted");
+            logger.info("Search space exhausted");
             return null;
         } else {
             return targets.remove();
         }
     }
+
+    /// True iff history contains an uncovered branch
+    private boolean stateContainsUncoveredBranch(T target) {
+        var currentHistory = target.getFullStatementHistory().getCurrentHistory();
+        for (var frame: target.getCallStack()) {
+            for (var history: frame.getFullStatementHistory().getAllHistorys()) {
+                var stmtHistory = history.first();
+                // if we are at the history of the current target make sure to add
+                // the current statement to have a complete history
+                if (currentHistory == stmtHistory) {
+                    stmtHistory = new ArrayList<Stmt>(stmtHistory);
+                    stmtHistory.add(target.getStmt());
+                }
+                List<Integer> branchhistory = BranchHistory.ConvertPathToBranchHistory(stmtHistory, history.second());
+                if (basisSets.get(history.second()).containsUncoveredBranch(branchhistory)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// True iff state can reach an uncovered from here
+    private boolean stateReachesUncoveredBranch(T target) {
+        int maxDistance = maxDepth - target.getDepth();
+        int distance = CFGDistance.calculateDistance(target, maxDistance, false, -1, (stmt, cfg) -> {
+            var basisSet = basisSets.get(cfg);
+            if (basisSet == null) return false;
+            return basisSet.statementUncovered(stmt, cfg);
+        });
+        return distance != -1;
+    }
+
 
     @Override
     public int size() {
@@ -109,17 +140,23 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     }
 
     @Override
-    public boolean requiresBranchHistoryData() {
+    public boolean requiresFullStatementHistoryData() {
         return true;
     }
 
     @Override
     public boolean generatedTestCase(SymbolicState state) {
-        BasisSet set = basisSets.get(state.getCFG());
-        boolean added = set.addPath(state.getBranchHistory());
-        if (added) logger.debug("Covered: {}", BranchHistory.HistoryToString(state));
+        var historys = state.getFullStatementHistory().getAllHistorys();
+        boolean coverage = false;
+        for (var history: historys) {
+            BasisSet set = basisSets.get(history.second());
+            if(set != null && set.addPath(BranchHistory.ConvertPathToBranchHistory(history.first(), history.second()))){
+                coverage = true;
+            }
+        }
+        if (coverage) logger.debug("Covered: {}", BranchHistory.HistoryToString(state));
         else logger.debug("Ignored: {}", BranchHistory.HistoryToString(state));
-        return added;
+        return coverage;
     }
 
     private static int calculateCyclomaticComplexity(StmtGraph<?> cfg) {
@@ -191,7 +228,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         /// Whether state can reach any branch that is still uncovered in the basis set
         public boolean canReachUncoveredBranch(T state, int maxDepth) {
             int maxDistance = maxDepth - state.getDepth();
-            return CFGDistance.calculateDistance(state, maxDistance, false, -1, stmt -> statementUncovered(stmt, state.getCFG())) != -1;
+            return CFGDistance.calculateDistance(state, maxDistance, false, -1, (stmt, cfg) -> statementUncovered(stmt, cfg)) != -1;
         }
 
         /// Whether the statement contains an uncovered branch
@@ -221,8 +258,9 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         /// add path to basis set if it is linearly independent
         public boolean addPath(List<Integer> branchHistory) {
             // create a matrix where every column corresponds to a path vector
-            int columns = basisSet.size() + 1;
             int rows = branches.size();
+            if (rows == 0) return false;
+            int columns = basisSet.size() + 1;
             double matrix[][] = new double[rows][columns];
             intoMatrix(matrix);
             List<Integer> newVector = new ArrayList<Integer>();
