@@ -339,6 +339,9 @@ public class JavaAnalyzer {
         return successorCache.computeIfAbsent(stmt, s -> cfg.getAllSuccessors(s));
     }
 
+
+    static HashSet<StmtGraph> graphs = new HashSet<StmtGraph>();
+
     /**
      * Returns the control flow graph of a method as a SootUp {@link StmtGraph}
      * object.
@@ -349,7 +352,7 @@ public class JavaAnalyzer {
     public StmtGraph<?> getCFG(JavaSootMethod method) {
         // Note: CFGs are cached by SootUp
         StmtGraph<?> cfg = method.getBody().getStmtGraph();
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled() && graphs.add(cfg)) {
             logger.debug("CFG: {}", DotExporter.createUrlToWebeditor(cfg));
         }
         return cfg;
