@@ -480,9 +480,7 @@ public class SymbolicExecutor {
                 state.setFinalState();
                 return List.of(state);
             }
-            FullStmtHistory calleeHistory = state.getFullStatementHistory();
             SymbolicState caller = state.returnToCaller();
-            if (trackFullStatementHistory) caller.getFullStatementHistory().addCallHistory(calleeHistory);
 
             // If the caller state is a definition statement, we still need to complete the
             // assignment using the return value of the method that just finished execution

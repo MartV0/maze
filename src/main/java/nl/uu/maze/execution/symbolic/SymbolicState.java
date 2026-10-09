@@ -313,6 +313,12 @@ public class SymbolicState implements SearchTarget {
             }
         }
 
+        FullStmtHistory calleeHistory = getFullStatementHistory();
+        if (!calleeHistory.currentHistoryEmpty()) {
+            caller.getFullStatementHistory().addCallHistory(calleeHistory);
+            if (calleeHistory.getCurrentHistory().getLast() != this.getStmt())
+                calleeHistory.addStmt(this.getStmt());
+        }
         return caller;
     }
 

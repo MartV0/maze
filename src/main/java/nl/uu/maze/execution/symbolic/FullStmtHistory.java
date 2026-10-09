@@ -63,7 +63,7 @@ public class FullStmtHistory {
         Pair<List<Stmt>, StmtGraph> history = new Pair<List<Stmt>, StmtGraph>(this.history, cfg);
         historys.add(history);
         for (var call: callHistory) {
-            call.getAllHistorys();
+            call.getAllHistorys(historys);
         }
     }
 

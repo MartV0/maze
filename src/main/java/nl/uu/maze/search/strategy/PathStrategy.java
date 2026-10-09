@@ -128,13 +128,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         logger.debug("Covered depth: {}", state.getDepth());
         // Whether this state covers any target paths
         boolean coverage = false;
-        for (SearchTarget frame: state.getCallStack()) {
-            for (var history: frame.getFullStatementHistory().getAllHistorys()) {
-                var paths = targetPaths.get(history.second());
-                // Remove covered paths from the set of paths that still need to be tested
-                if(paths.second().removeSublists(history.first())){
-                    coverage = true;
-                }
+        for (var history: state.getFullStatementHistory().getAllHistorys()) {
+            var paths = targetPaths.get(history.second());
+            // Remove covered paths from the set of paths that still need to be tested
+            if(paths.second().removeSublists(history.first())){
+                coverage = true;
             }
         }
 
