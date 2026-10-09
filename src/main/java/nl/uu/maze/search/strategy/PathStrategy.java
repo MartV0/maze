@@ -66,6 +66,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     SearchOrder pathExploration = SearchOrder.DFS;
     SearchOrder pathFinishing = SearchOrder.BFS;
     SearchOrder pathFinding = SearchOrder.BFS;
+    boolean feasibilityChecking = true;
 
     public PathStrategy(PathGenerator pathGenerator, int maxDepth, List<String> args) {
         this.pathGenerator = pathGenerator;
@@ -74,6 +75,9 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             this.pathExploration = stringToOrder(args.get(0));
             this.pathFinishing = stringToOrder(args.get(1));
             this.pathFinding = stringToOrder(args.get(2));
+            if (args.size() >= 4 && (args.get(3) == "f")) {
+                feasibilityChecking = false;
+            }
         }
         logger.debug("pathExploration:{}", pathExploration);
         logger.debug("pathFinishing:{}", pathFinishing);
@@ -104,7 +108,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             for (var path: paths)
             {
                 // Check if path is feasible
-                if (!PathExecutor.executePath(symbolicExecutor, path, target.getMethod(), target.getSootClass())) {
+                if (feasibilityChecking && !PathExecutor.executePath(symbolicExecutor, path, target.getMethod(), target.getSootClass())) {
                     logger.debug("Path is infeasible: {}", path);
                     infeasible++;
                     continue;
