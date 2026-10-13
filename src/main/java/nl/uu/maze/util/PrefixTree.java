@@ -1,6 +1,7 @@
 package nl.uu.maze.util;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashMap;
 
@@ -32,6 +33,13 @@ public class PrefixTree<T> {
                 total += child.size();
             }
             return total;
+        }
+
+        public void collectAll(List<List<T>> contents) {
+            if (isList) contents.add(content);
+            for (TrieNode child: children.values()) {
+                child.collectAll(contents);
+            }
         }
     }
 
@@ -157,6 +165,12 @@ public class PrefixTree<T> {
 
     public Set<T> initialElements() {
         return root.children.keySet();
+    }
+
+    public List<List<T>> returnAll() {
+        var all = new ArrayList<List<T>>();
+        root.collectAll(all);
+        return all;
     }
 
     public int size() {

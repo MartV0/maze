@@ -208,10 +208,14 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     @Override
     public void executionFinished() {
         int uncovered = 0;
+        int undiscovered = 0;
         for (var paths: targetPaths.values()) {
             uncovered += paths.second().size();
+            undiscovered += paths.first().size();
         }
         logger.info("{} Uncovered target paths", uncovered);
+        logger.info("{} States left", targets.size());
+        logger.info("{} Undiscovered target paths", undiscovered);
     }
 
     /** try to find a state from which a target path can be reached */
