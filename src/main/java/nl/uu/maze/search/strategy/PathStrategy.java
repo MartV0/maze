@@ -220,13 +220,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     /** try to find a state from which a target path can be reached */
     private T nextStateReachingTargetPath() {
-        // Accumulate first statements of all target paths
-        ArrayList<Stmt> undiscoveredFirstStmts = new ArrayList<Stmt>();
-        targetPaths.values().forEach(
-                paths -> paths.first().initialElements().forEach(stmt ->
-                    undiscoveredFirstStmts.add(stmt)
-                )
-            );
+        List<Stmt> undiscoveredFirstStmts = getUndiscoveredFirstStmts();
         if (pathFinding == SearchOrder.Heuristic) {
             // Find next state based on distance to first stmt of target paths
             return nextStateHeuristic(target -> {
@@ -242,6 +236,17 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                 return false;
             });
         }
+    }
+
+    private List<Stmt> getUndiscoveredFirstStmts() {
+        // Accumulate first statements of all target paths
+        ArrayList<Stmt> undiscoveredFirstStmts = new ArrayList<Stmt>();
+        targetPaths.values().forEach(
+            paths -> paths.first().initialElements().forEach(stmt ->
+                undiscoveredFirstStmts.add(stmt)
+            )
+        );
+        return undiscoveredFirstStmts;
     }
 
     /** try to find a state where the end of the history matches the beginning
@@ -263,14 +268,15 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
      * hasn't been covered in a test case yet */
     private T nextUncoveredInTests() {
         if (pathFinishing == SearchOrder.Heuristic) {
-            // Heuristic that prioritises states which are closer to terminal states
+            List<Stmt> undiscoveredFirstStmts = getUndiscoveredFirstStmts();
+            // Heuristic that prioritises states which are closer to terminal states or undiscovered paths
             return nextStateHeuristic(
                 target -> { 
                     if (!stateContainsTargetPath(target)) return 0.;
                     return distanceToScore(
                         target,
                         // matches terminal statements
-                        (stmt, cfg) -> cfg.successors(stmt).size() == 0
+                        (stmt, cfg) -> cfg.successors(stmt).size() == 0 || undiscoveredFirstStmts.contains(stmt)
                     );
                 }
             );
