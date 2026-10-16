@@ -51,7 +51,7 @@ public class SymbolicStateValidator {
     public Optional<Model> validate(List<PathConstraint> pathConstraints) {
         solver.add(pathConstraints.stream().map(PathConstraint::getConstraint).toArray(BoolExpr[]::new));
         Status status = solver.check();
-        logger.debug("Path condition {}: {}", status.toString(), pathConstraints);
+        logger.trace("Path condition {}: {}", status.toString(), pathConstraints);
         Optional<Model> model = Optional.empty();
         if (status == Status.SATISFIABLE) {
             model = Optional.ofNullable(solver.getModel());

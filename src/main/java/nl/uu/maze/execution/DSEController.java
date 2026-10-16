@@ -383,7 +383,7 @@ public class DSEController {
                 executionDeadline = System.currentTimeMillis() + remainingTime / 2;
             }
 
-            logger.debug("Current state: {}", current);
+            logger.trace("Current state: {}", current);
             if (!current.isCtorState() && current.isFinalState() || (current.getDepth() >= maxDepth && !completeHistory)) {
                 // For concrete-driven, we only care about one final state, so we can stop
                 if (concreteDriven || completeHistory) {
