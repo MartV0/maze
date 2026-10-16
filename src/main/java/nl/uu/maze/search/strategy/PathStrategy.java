@@ -128,6 +128,11 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     @Override
+    public boolean requiresHistoryCompletion() {
+        return true;
+    }
+
+    @Override
     public boolean generatedTestCase(SymbolicState state) {
         logger.debug("Covered depth: {}", state.getDepth());
         // Whether this state covers any target paths

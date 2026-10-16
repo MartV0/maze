@@ -145,6 +145,11 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     }
 
     @Override
+    public boolean requiresHistoryCompletion() {
+        return true;
+    }
+
+    @Override
     public boolean generatedTestCase(SymbolicState state) {
         var historys = state.getFullStatementHistory().getAllHistorys();
         boolean coverage = false;

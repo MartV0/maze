@@ -175,6 +175,11 @@ public class ConcreteSearchStrategy extends SearchStrategy<PathConditionCandidat
     }
 
     @Override
+    public boolean requiresHistoryCompletion() {
+        return strategy.requiresHistoryCompletion();
+    }
+
+    @Override
     public boolean requiresStatementHistoryData() {
         return strategy.requiresStatementHistoryData();
     }

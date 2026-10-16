@@ -104,6 +104,14 @@ public abstract class SearchStrategy<T extends SearchTarget> {
         return false;
     }
 
+    /** Whether this search strategy requires any non final state to have its
+     * history completed using a concrete execution. This is useful because
+     * this additional history can cover parts of the code that might otherwise
+     * not be covered. */
+    public boolean requiresHistoryCompletion() {
+        return false;
+    }
+
     /** Used to inform search strategy a test case was generated based on the
      * specified symbolic state */
     public boolean generatedTestCase(SymbolicState state) {

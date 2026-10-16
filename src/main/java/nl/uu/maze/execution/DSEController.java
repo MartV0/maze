@@ -98,7 +98,7 @@ public class DSEController {
             throws Exception {
         instrumenter = new BytecodeInstrumenter(classPath);
         ClassLoader classLoader;
-        if (concreteDriven) {
+        if (concreteDriven || searchStrategy.requiresHistoryCompletion()) {
             classLoader = instrumenter.getClassLoader();
         } else {
             String[] paths = classPath.split(File.pathSeparator);
@@ -138,7 +138,7 @@ public class DSEController {
         this.timeBudget = timeBudget;
         // Instrument the class if concrete-driven
         // If this class was instrumented before, it will reuse previous results
-        this.instrumented = concreteDriven
+        this.instrumented = concreteDriven || searchStrategy.requiresHistoryCompletion()
                 ? instrumenter.instrument(className)
                 : null;
 
@@ -275,7 +275,7 @@ public class DSEController {
 
             SymbolicSearchStrategy strategy = searchStrategy.toSymbolic();
             initializeSymbolic(strategy);
-            runSymbolicDriven(strategy, ctorSoot);
+            runSymbolicDriven(strategy, ctorSoot, false);
 
             // If any unfinished states are still in the strategy, generate test cases
             Collection<SymbolicState> states = strategy.getAll();
@@ -291,19 +291,37 @@ public class DSEController {
                     break;
                 }
                 if (!state.isInfeasible()) {
-                    generateTestCase(state.returnToRootCaller(), strategy);
+                    generateTestCase(state.returnToRootCaller(), strategy, true);
                 }
             }
         }
         searchStrategy.executionFinished();
     }
 
+    // Completes the history of a symbolic state by doing a concrete execution
+    // combined with a symbolic replay of said execution
+    private SymbolicState completeHistory(SymbolicState state, ArgMap argMap) throws Exception {
+        JavaSootMethod sootMethod = state.getMethod();
+        Method javaMethod = analyzer.getJavaMethod(sootMethod.getSignature(), instrumented);
+        TraceManager.clearEntries();
+        concrete.execute(ctor, javaMethod, argMap);
+        Optional<SymbolicState> finalState = runSymbolicReplay(sootMethod, true).map(SymbolicState::returnToRootCaller);
+        // In case no the symbolic replay does not return a state just return the non
+        // complete state as a default
+        return finalState.orElse(state);
+    }
+
     /**
      * Generate a test case for the given method and symbolic state.
+     * incomplete = true if state is not a final state and might need to be
+     * completed if required by the search strategy.
      */
-    private void generateTestCase(SymbolicState state, SearchStrategy strategy) {
+    private void generateTestCase(SymbolicState state, SearchStrategy strategy, boolean incomplete) {
         try {
             Optional<ArgMap> argMap = validator.evaluate(state);
+            if (argMap.isPresent() && incomplete && strategy.requiresHistoryCompletion()) {
+                state = completeHistory(state, argMap.get());
+            }
             if (argMap.isPresent() && strategy.generatedTestCase(state)) {
                 generator.addMethodTestCase(state.getMethod(), ctorSoot, argMap.get());
             }
@@ -343,11 +361,11 @@ public class DSEController {
      *         optional otherwise
      */
     private Optional<SymbolicState> runSymbolicDriven(SymbolicSearchStrategy searchStrategy,
-            JavaSootMethod targetMethod) {
+            JavaSootMethod targetMethod, boolean completeHistory) {
         SymbolicState current;
         while ((current = searchStrategy.next()) != null) {
             // Check if we are over the time budget
-            if (System.currentTimeMillis() >= executionDeadline) {
+            if (System.currentTimeMillis() >= executionDeadline && !completeHistory) {
                 if (concreteDriven) {
                     return Optional.of(current);
                 }
@@ -366,19 +384,19 @@ public class DSEController {
             }
 
             logger.debug("Current state: {}", current);
-            if (!current.isCtorState() && current.isFinalState() || current.getDepth() >= maxDepth) {
+            if (!current.isCtorState() && current.isFinalState() || (current.getDepth() >= maxDepth && !completeHistory)) {
                 // For concrete-driven, we only care about one final state, so we can stop
-                if (concreteDriven) {
+                if (concreteDriven || completeHistory) {
                     return Optional.of(current);
                 } else if (!current.isInfeasible()) {
                     // For symbolic-driven, generate test case
-                    generateTestCase(current.returnToRootCaller(), searchStrategy);
+                    generateTestCase(current.returnToRootCaller(), searchStrategy, current.getDepth() >= maxDepth);
                 }
                 continue;
             }
 
             // Symbolically execute the statement of the current symbolic state
-            List<SymbolicState> newStates = symbolic.step(current, concreteDriven);
+            List<SymbolicState> newStates = symbolic.step(current, concreteDriven || completeHistory);
 
             // For ctor states, check for final states from which we can switch to the
             // target method(s)
@@ -391,7 +409,7 @@ public class DSEController {
                             if (concreteDriven) {
                                 return Optional.of(state);
                             } else if (!clazz.isEnum() && !state.isInfeasible()) {
-                                generateTestCase(state, searchStrategy);
+                                generateTestCase(state, searchStrategy, false);
                             }
                             continue;
                         }
@@ -401,7 +419,7 @@ public class DSEController {
 
                         // For concrete-driven, store this final ctor state for reuse and switch to the
                         // single target method being replayed right now
-                        if (concreteDriven) {
+                        if (concreteDriven || completeHistory) {
                             initStates.put(TraceManager.hashCode(state.getMethodSignature()), state.clone());
                             state.setMethod(targetMethod, analyzer.getCFG(targetMethod));
                         }
@@ -434,7 +452,7 @@ public class DSEController {
     }
 
     /** Run symbolic-driven DSE to replay a concrete execution. */
-    public Optional<SymbolicState> runSymbolicReplay(JavaSootMethod method) {
+    public Optional<SymbolicState> runSymbolicReplay(JavaSootMethod method, boolean completeHistory) {
         SymbolicState initState;
 
         // For static methods, start at the target method
@@ -457,7 +475,7 @@ public class DSEController {
 
         replayStrategy.add(initState);
         // Run symbolic execution
-        Optional<SymbolicState> finalState = runSymbolicDriven(replayStrategy, method);
+        Optional<SymbolicState> finalState = runSymbolicDriven(replayStrategy, method, completeHistory);
         replayStrategy.reset();
         return finalState;
     }
@@ -479,7 +497,7 @@ public class DSEController {
             // Concrete execution followed by symbolic replay
             TraceManager.clearEntries();
             concrete.execute(ctor, javaMethod, argMap);
-            Optional<SymbolicState> finalState = runSymbolicReplay(method);
+            Optional<SymbolicState> finalState = runSymbolicReplay(method, false);
             logger.debug("Replayed state: {}", finalState.isPresent() ? finalState.get() : "none");
 
             if (finalState.isPresent()) {

@@ -64,6 +64,11 @@ public class SymbolicSearchStrategy extends SearchStrategy<SymbolicState> {
     }
 
     @Override
+    public boolean requiresHistoryCompletion() {
+        return strategy.requiresHistoryCompletion();
+    }
+
+    @Override
     public boolean requiresStatementHistoryData() {
         return strategy.requiresStatementHistoryData();
     }
