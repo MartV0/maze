@@ -173,4 +173,25 @@ public class ConcreteSearchStrategy extends SearchStrategy<PathConditionCandidat
     public boolean requiresBranchHistoryData() {
         return strategy.requiresBranchHistoryData();
     }
+
+    @Override
+    public boolean requiresStatementHistoryData() {
+        return strategy.requiresStatementHistoryData();
+    }
+
+    @Override
+    public boolean requiresFullStatementHistoryData() {
+        return strategy.requiresFullStatementHistoryData();
+    }
+
+
+    @Override
+    public boolean generatedTestCase(SymbolicState state) {
+        return strategy.generatedTestCase(state);
+    }
+
+    @Override
+    public void executionFinished() {
+        strategy.executionFinished();
+    }
 }
