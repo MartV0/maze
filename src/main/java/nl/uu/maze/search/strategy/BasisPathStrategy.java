@@ -98,7 +98,8 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
                 var stmtHistory = history.first();
                 // if we are at the history of the current target make sure to add
                 // the current statement to have a complete history
-                if (currentHistory == stmtHistory) {
+                Stmt last = stmtHistory.size() > 0 ? stmtHistory.getLast() : null;
+                if (currentHistory == stmtHistory && last != target.getStmt()) {
                     stmtHistory = new ArrayList<Stmt>(stmtHistory);
                     stmtHistory.add(target.getStmt());
                 }
