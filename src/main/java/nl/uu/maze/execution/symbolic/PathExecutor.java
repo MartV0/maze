@@ -1,6 +1,7 @@
 package nl.uu.maze.execution.symbolic;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.LinkedList;
 
 import com.microsoft.z3.*;
@@ -11,19 +12,24 @@ import sootup.core.jimple.common.stmt.JInvokeStmt;
 import sootup.core.graph.StmtGraph;
 import sootup.java.core.JavaSootMethod;
 import sootup.java.core.JavaSootClass;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import nl.uu.maze.transform.JimpleToZ3Transformer;
 
 /** Can execute a path in isolation */
 public class PathExecutor {
+    private final static Logger logger = LoggerFactory.getLogger(PathExecutor.class);
+
     /** Symbolically executes the given path and returns whether or not the path is feasible */
     public static boolean executePath(SymbolicExecutor executor, List<Stmt> path, JavaSootMethod method, JavaSootClass sootClass) {
         // expand the path backward, thus adding more context to the path, which can 
         // help detect additional infeasible paths
         path = expandPathBackward(path, method);        
         SymbolicStateValidator validator = new SymbolicStateValidator();
-        SymbolicState symbolicState = initializeState(path, method, sootClass);
-        return followPath(executor, path, 0, symbolicState, validator);
+        Optional<SymbolicState> symbolicState = initializeState(path, method, sootClass);
+        if (!symbolicState.isPresent()) return false;
+        return followPath(executor, path, 0, symbolicState.get(), validator);
     }
 
     // Uses depht first search to follow the given path.
@@ -72,28 +78,33 @@ public class PathExecutor {
 
     /** Creates a new symbolic state starting in the first statement of path and
       * initializing any variables that are used in the path */
-    static SymbolicState initializeState(List<Stmt> path, JavaSootMethod method, JavaSootClass sootClass) {
+    static Optional<SymbolicState> initializeState(List<Stmt> path, JavaSootMethod method, JavaSootClass sootClass) {
         SymbolicState symbolicState = new SymbolicState(method, method.getBody().getStmtGraph(), path.get(0), sootClass);
         symbolicState.switchToMethodState();
         for(Stmt stmt: path) {
-            stmt.getUses().forEach(value -> {
-                value.getUses().forEach(use -> {
-                    String var = use.toString();
-                    // parameters (JParameterRef) are initialized during execution
-                    if (
-                        (use instanceof JArrayRef ||
-                        use instanceof JFieldRef ||
-                        use instanceof JThisRef ||
-                        use instanceof Local) &&
-                        !symbolicState.exists(var)
-                    )
-                    {
-                        Expr<?> expr = JimpleToZ3Transformer.newVariable(symbolicState, var, use.getType(), null);
-                        symbolicState.assign(var, expr);
-                    }
+            try {
+                stmt.getUses().forEach(value -> {
+                    value.getUses().forEach(use -> {
+                        String var = use.toString();
+                        // parameters (JParameterRef) are initialized during execution
+                        if (
+                            (use instanceof JArrayRef ||
+                            use instanceof JFieldRef ||
+                            use instanceof JThisRef ||
+                            use instanceof Local) &&
+                            !symbolicState.exists(var)
+                        )
+                        {
+                            Expr<?> expr = JimpleToZ3Transformer.newVariable(symbolicState, var, use.getType(), null);
+                            symbolicState.assign(var, expr);
+                        }
+                    });
                 });
-            });
+            } catch (Exception e) {
+                logger.warn("Error initialing state for method {}: {}", method.getName(), e.getMessage());
+                logger.debug("Error stack trace: ", e);
+            }
         }
-        return symbolicState;
+        return Optional.of(symbolicState);
     }
 }
