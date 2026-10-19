@@ -192,7 +192,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     public void executionFinished() {
         int missing = 0;
         for (var set: basisSets.values()) {
-            missing += set.cyclomaticComplexity - set.basisSet.size();
+            missing += Math.abs(set.cyclomaticComplexity - set.basisSet.size());
         }
         logger.info("{} too few independent paths in basis sets", missing);
     }

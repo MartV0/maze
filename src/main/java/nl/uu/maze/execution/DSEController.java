@@ -302,6 +302,11 @@ public class DSEController {
     // combined with a symbolic replay of said execution
     private SymbolicState completeHistory(SymbolicState state, ArgMap argMap) throws Exception {
         JavaSootMethod sootMethod = state.getMethod();
+        // Concrete execution currently does not support just running the constructor
+        // so just quit in this case
+        if (state.isCtorState()) {
+            return state;
+        }
         Method javaMethod = analyzer.getJavaMethod(sootMethod.getSignature(), instrumented);
         TraceManager.clearEntries();
         concrete.execute(ctor, javaMethod, argMap);
