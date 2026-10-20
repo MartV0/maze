@@ -6,6 +6,7 @@ import nl.uu.maze.search.strategy.PathGenerator.PathGenerator;
 import nl.uu.maze.util.PrefixTree;
 import nl.uu.maze.util.Pair;
 import nl.uu.maze.analysis.CFGDistance;
+import nl.uu.maze.analysis.CFGDistance.StmtDistance;
 import nl.uu.maze.search.strategy.ProbabilisticSearch;
 import nl.uu.maze.search.heuristic.SearchHeuristic;
 import nl.uu.maze.execution.concrete.ConcreteExecutor;
@@ -22,7 +23,6 @@ import java.util.Queue;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.function.Predicate;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -229,14 +229,14 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         if (pathFinding == SearchOrder.Heuristic) {
             // Find next state based on distance to first stmt of target paths
             return nextStateHeuristic(target -> {
-                return distanceToScore(target, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt), maxDepth);
+                return distanceToScore(target, stmtDist -> undiscoveredFirstStmts.contains(stmtDist.stmt), maxDepth);
             }, targets);
         }
         else {
             return nextState(pathFinding, target -> {
                 int maxDistance = maxDepth - target.getDepth();
                 // Find state that can reach first stmt of target paths
-                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt)) != -1)
+                if (CFGDistance.calculateDistance(target, maxDistance, false, -1, stmtDist -> undiscoveredFirstStmts.contains(stmtDist.stmt)) != -1)
                     return true;
                 return false;
             });
@@ -280,9 +280,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                     if (!stateContainsTargetPath(target)) return 0.;
                     return distanceToScore(
                         target,
-                        // TODO:only matches terminal locally not actually a final state
                         // matches terminal statements
-                        (stmt, cfg) -> cfg.successors(stmt).size() == 0 || undiscoveredFirstStmts.contains(stmt),
+                        stmtDist -> stmtDist.isFinalState() || undiscoveredFirstStmts.contains(stmtDist.stmt),
                         maxDepth
                     );
                 },
@@ -311,7 +310,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     /** Scores a target based on how close it it to a statement satisfying the predicate */
-    static <T extends SearchTarget> double distanceToScore(T target, BiPredicate<Stmt, StmtGraph<?>> predicate, int maxDepth) {
+    static <T extends SearchTarget> double distanceToScore(T target, Predicate<CFGDistance.StmtDistance> predicate, int maxDepth) {
         int maxDistance = maxDepth - target.getDepth();
         // Calculates the distance to first matching statement
         int distance = CFGDistance.calculateDistance(
@@ -319,7 +318,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             maxDistance, 
             false, 
             -1,
-            (stmt, cfg) -> predicate.test(stmt, cfg)
+            stmtDist -> predicate.test(stmtDist)
         );
         if (distance == -1) {
             return 0;

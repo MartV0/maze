@@ -93,8 +93,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     private T nextContainingUncovered() {
         return PathStrategy.nextStateHeuristic(target -> {
             if (stateContainsUncoveredBranch(target)) {
-                // TODO: This only matches final statements of functions, not final states
-                return PathStrategy.distanceToScore(target, (stmt, cfg) -> cfg.successors(stmt).size() == 0, maxDepth);
+                return PathStrategy.distanceToScore(target, stmtDist -> stmtDist.isFinalState(), maxDepth);
             } else {
                 return 0.;
             }
@@ -127,10 +126,10 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     // states closer to a uncovered statement based on a heuristic
     private T nextReachingUncovered() {
         return PathStrategy.nextStateHeuristic(target -> {
-            return PathStrategy.distanceToScore(target, (stmt, cfg) -> {
-                var basisSet = basisSets.get(cfg);
+            return PathStrategy.distanceToScore(target, stmtDist -> {
+                var basisSet = basisSets.get(stmtDist.cfg);
                 if (basisSet == null) return false;
-                return basisSet.statementUncovered(stmt, cfg);
+                return basisSet.statementUncovered(stmtDist.stmt, stmtDist.cfg);
             }, maxDepth);
         }, targets);
     }
@@ -139,10 +138,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     // TODO: beter heuristic needed
     private T nextState() {
         return PathStrategy.nextStateHeuristic(target -> {
-            return PathStrategy.distanceToScore(target, (stmt, cfg) -> {
-                // TODO: This only matches final statements of functions, not final states
-                return cfg.successors(stmt).size() == 0;
-            }, maxDepth);
+            return PathStrategy.distanceToScore(target, stmtDist -> stmtDist.isFinalState(), maxDepth);
         }, targets);
     }
 
@@ -255,7 +251,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         /// Whether state can reach any branch that is still uncovered in the basis set
         public boolean canReachUncoveredBranch(T state, int maxDepth) {
             int maxDistance = maxDepth - state.getDepth();
-            return CFGDistance.calculateDistance(state, maxDistance, false, -1, (stmt, cfg) -> statementUncovered(stmt, cfg)) != -1;
+            return CFGDistance.calculateDistance(state, maxDistance, false, -1, stmtDist -> statementUncovered(stmtDist.stmt, stmtDist.cfg)) != -1;
         }
 
         /// Whether the statement contains an uncovered branch

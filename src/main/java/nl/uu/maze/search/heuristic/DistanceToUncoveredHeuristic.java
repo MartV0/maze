@@ -41,7 +41,7 @@ public class DistanceToUncoveredHeuristic extends SearchHeuristic {
                 MAX_DISTANCE, 
                 true, 
                 MAX_DISTANCE,
-                (stmt, _cfg) -> !coverageTracker.isCovered(stmt)
+                stmtDist -> !coverageTracker.isCovered(stmtDist.stmt)
             ),
             0.1, 
             false
