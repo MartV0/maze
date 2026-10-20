@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.ArrayList;
 import nl.uu.maze.util.BranchHistory;
 import nl.uu.maze.execution.symbolic.SymbolicState;
+import nl.uu.maze.search.strategy.PathStrategy;
 import Jama.Matrix;
 import java.util.HashMap;
 import sootup.core.graph.StmtGraph;
@@ -26,7 +27,7 @@ import nl.uu.maze.search.SearchTarget;
 public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     private final static Logger logger = LoggerFactory.getLogger(BasisPathStrategy.class);
 
-    private final Queue<T> targets = new LinkedList<>();
+    private final LinkedList<T> targets = new LinkedList<>();
 
     private HashMap<StmtGraph<?>, BasisSet> basisSets = new HashMap<StmtGraph<?>, BasisSet>();
 
@@ -65,29 +66,39 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             return null;
         }
         // First try to find a state with an uncovered branch in the history
-        for (T target: targets) {
-            if (stateContainsUncoveredBranch(target)) {
-                targets.remove(target);
-                logger.trace("returning uncovered state");
-                return target;
-            }
+        var nextState = nextContainingUncovered();
+        if (nextState != null) {
+            logger.trace("returning uncovered state");
+            return nextState;
         }
         // Second try to find a state that can reach an uncovered branch
-        for (T target: targets) {
-            if (stateReachesUncoveredBranch(target)) {
-                targets.remove(target);
-                logger.trace("returning reachable state");
-                return target;
-            }
+        nextState = nextReachingUncovered();
+        if (nextState != null) {
+            logger.trace("returning reachable state");
+            return nextState;
         }
         logger.debug("returning next state");
-        // If no such states are found, return first target
-        if (targets.isEmpty()) {
+        // If no such states are found, return a default
+        nextState = nextState();
+        if (nextState == null) {
             logger.info("Search space exhausted");
             return null;
         } else {
-            return targets.remove();
+            return nextState;
         }
+    }
+
+    // Returns state containing an uncovered branch if it is present, states closer
+    // to a terminal state are prioritised by a heuristic
+    private T nextContainingUncovered() {
+        return PathStrategy.nextStateHeuristic(target -> {
+            if (stateContainsUncoveredBranch(target)) {
+                // TODO: This only matches final statements of functions, not final states
+                return PathStrategy.distanceToScore(target, (stmt, cfg) -> cfg.successors(stmt).size() == 0, maxDepth);
+            } else {
+                return 0.;
+            }
+        }, targets);
     }
 
     /// True iff history contains an uncovered branch
@@ -112,17 +123,28 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         return false;
     }
 
-    /// True iff state can reach an uncovered from here
-    private boolean stateReachesUncoveredBranch(T target) {
-        int maxDistance = maxDepth - target.getDepth();
-        int distance = CFGDistance.calculateDistance(target, maxDistance, false, -1, (stmt, cfg) -> {
-            var basisSet = basisSets.get(cfg);
-            if (basisSet == null) return false;
-            return basisSet.statementUncovered(stmt, cfg);
-        });
-        return distance != -1;
+    // Returns a state from which an uncovered branch can be reached, prioritises
+    // states closer to a uncovered statement based on a heuristic
+    private T nextReachingUncovered() {
+        return PathStrategy.nextStateHeuristic(target -> {
+            return PathStrategy.distanceToScore(target, (stmt, cfg) -> {
+                var basisSet = basisSets.get(cfg);
+                if (basisSet == null) return false;
+                return basisSet.statementUncovered(stmt, cfg);
+            }, maxDepth);
+        }, targets);
     }
 
+    // Returns any state, prioritises those closer to a final state
+    // TODO: beter heuristic needed
+    private T nextState() {
+        return PathStrategy.nextStateHeuristic(target -> {
+            return PathStrategy.distanceToScore(target, (stmt, cfg) -> {
+                // TODO: This only matches final statements of functions, not final states
+                return cfg.successors(stmt).size() == 0;
+            }, maxDepth);
+        }, targets);
+    }
 
     @Override
     public int size() {
@@ -136,7 +158,6 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
 
     @Override
     public Collection<T> getAll() {
-        // TODO: only return potentially independent paths?
         return targets;
     }
 

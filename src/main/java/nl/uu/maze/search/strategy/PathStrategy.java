@@ -229,8 +229,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         if (pathFinding == SearchOrder.Heuristic) {
             // Find next state based on distance to first stmt of target paths
             return nextStateHeuristic(target -> {
-                return distanceToScore(target, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt));
-            });
+                return distanceToScore(target, (stmt, _cfg) -> undiscoveredFirstStmts.contains(stmt), maxDepth);
+            }, targets);
         }
         else {
             return nextState(pathFinding, target -> {
@@ -280,10 +280,13 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
                     if (!stateContainsTargetPath(target)) return 0.;
                     return distanceToScore(
                         target,
+                        // TODO:only matches terminal locally not actually a final state
                         // matches terminal statements
-                        (stmt, cfg) -> cfg.successors(stmt).size() == 0 || undiscoveredFirstStmts.contains(stmt)
+                        (stmt, cfg) -> cfg.successors(stmt).size() == 0 || undiscoveredFirstStmts.contains(stmt),
+                        maxDepth
                     );
-                }
+                },
+                targets
             );
         }
         else {
@@ -308,7 +311,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     }
 
     /** Scores a target based on how close it it to a statement satisfying the predicate */
-    private double distanceToScore(T target, BiPredicate<Stmt, StmtGraph<?>> predicate) {
+    static <T extends SearchTarget> double distanceToScore(T target, BiPredicate<Stmt, StmtGraph<?>> predicate, int maxDepth) {
         int maxDistance = maxDepth - target.getDepth();
         // Calculates the distance to first matching statement
         int distance = CFGDistance.calculateDistance(
@@ -353,7 +356,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         return null;
     }
 
-    private T nextStateHeuristic(Function<T, Double> weightFunction) {
+    static <T extends SearchTarget> T nextStateHeuristic(Function<T, Double> weightFunction, LinkedList<T> targets) {
         double weights[] = new double[targets.size()];
         double totalWeight = 0;
         for(int i = 0; i < targets.size(); i++) {
