@@ -75,13 +75,14 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             this.pathExploration = stringToOrder(args.get(0));
             this.pathFinishing = stringToOrder(args.get(1));
             this.pathFinding = stringToOrder(args.get(2));
-            if (args.size() >= 4 && (args.get(3) == "f")) {
+            if (args.size() >= 4 && (args.get(3).equals("f"))) {
                 feasibilityChecking = false;
             }
         }
         logger.debug("pathExploration:{}", pathExploration);
         logger.debug("pathFinishing:{}", pathFinishing);
         logger.debug("pathFinishing:{}", pathFinding);
+        logger.debug("feasibilityChecking:{}", feasibilityChecking);
     }
 
     public String getName() {
