@@ -16,6 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <compile.excludes></compile.excludes>
     </properties>
 
     <dependencies>
@@ -153,6 +154,9 @@
                             <version>4.7.6</version>
                         </path>
                     </annotationProcessorPaths>
+                    <excludes>
+                      <exclude>${compile.excludes}</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
