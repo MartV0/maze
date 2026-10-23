@@ -44,6 +44,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     @Override
     public void add(T target) {
         var cfg = target.getCFG();
+        // Create new empty basisSet if this is the first time encountering the cfg
         if (!basisSets.containsKey(cfg)) {
             logger.debug("Added: {}", target.getCFG());
             BasisSet basis = new BasisSet(cfg);
@@ -100,7 +101,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         }, targets);
     }
 
-    /// True iff history contains an uncovered branch
+    /** True iff history contains an uncovered branch*/
     private boolean stateContainsUncoveredBranch(T target) {
         var currentHistory = target.getFullStatementHistory().getCurrentHistory();
         for (var frame: target.getCallStack()) {
@@ -135,7 +136,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
     }
 
     // Returns any state, prioritises those closer to a final state
-    // TODO: beter heuristic needed
+    // TODO: better heuristic needed
     private T nextState() {
         return PathStrategy.nextStateHeuristic(target -> {
             return PathStrategy.distanceToScore(target, stmtDist -> stmtDist.isFinalState(), maxDepth);
@@ -173,6 +174,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         boolean coverage = false;
         for (var history: historys) {
             BasisSet set = basisSets.get(history.second());
+            // Try to add path to the basis path
             if(set != null && set.addPath(BranchHistory.ConvertPathToBranchHistory(history.first(), history.second()))){
                 coverage = true;
             }
@@ -197,7 +199,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
         return E - N + 1;
     }
 
-    /// Tests whether all the basissets are complete
+    /** Tests whether all the basissets are complete*/
     private boolean basisSetsComplete() {
         for (var set: basisSets.values()) {
             if (!set.isComplete()) return false;
@@ -237,7 +239,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             logger.debug("branches: {}", branches.size());
         }
 
-        /// Whether branchhistory contains an branch that is uncoverd in the basisSet
+        /** Whether branchhistory contains an branch that is uncovered in the basisSet*/
         public boolean containsUncoveredBranch(Collection<Integer> branchHistory) {
             for (int i = 0; i < branches.size(); i++) {
                 if (branchHistory.contains(branches.get(i))) {
@@ -248,13 +250,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             return false;
         }
 
-        /// Whether state can reach any branch that is still uncovered in the basis set
-        public boolean canReachUncoveredBranch(T state, int maxDepth) {
-            int maxDistance = maxDepth - state.getDepth();
-            return CFGDistance.calculateDistance(state, maxDistance, false, -1, stmtDist -> statementUncovered(stmtDist.stmt, stmtDist.cfg)) != -1;
-        }
-
-        /// Whether the statement contains an uncovered branch
+        /** Whether the statement contains an uncovered branch*/
         boolean statementUncovered(Stmt statement, StmtGraph cfg) {
             var successors = cfg.successors(statement);
             if (successors.size() > 1) {
@@ -268,7 +264,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             return false;
         }
 
-        /// Checks if branch at index is uncovered in the basisset
+        /** Checks if the branch at the specified index is uncovered in the basisset*/
         boolean isBranchUncovered(int branchIndex) {
             for (var pathVector: basisSet) {
                 if (pathVector.get(branchIndex) > 0) {
@@ -278,7 +274,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             return true;
         }
 
-        /// add path to basis set if it is linearly independent
+        /** add path to basis set if it is linearly independent*/
         public boolean addPath(List<Integer> branchHistory) {
             // create a matrix where every column corresponds to a path vector
             int rows = branches.size();
@@ -306,7 +302,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             return independent;
         }
 
-        // Reads the path vectors into the columns of the given 2d array
+        /** Reads the path vectors into the columns of the given 2d array */
         public void intoMatrix(double matrix[][]) {
             for (int i = 0; i < branches.size(); i++) {
                 for (int j = 0; j < basisSet.size(); j++) {
@@ -315,7 +311,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
             }
         }
 
-        // checks whether current basisset is complete
+        /** checks whether current basisset is complete */
         public boolean isComplete() {
             return basisSet.size() >= cyclomaticComplexity;
         }

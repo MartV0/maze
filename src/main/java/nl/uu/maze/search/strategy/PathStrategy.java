@@ -51,11 +51,13 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     private final LinkedList<T> targets = new LinkedList<>();
 
     // Map from each cfg to all the target paths for that cfg
-    // First element in pair is all target paths that are not yet covered by some state
-    //  This is needed to know which states containing target path still need to be discovered
+    // First element in pair is all target paths that have not yet been explored
+    //  This is needed to know which states containing target paths still need to be discovered
     // Second element in pair is all target paths that are not yet covered in some test
     //  This is needed in order to know which states we should keep exploring so they get covered
     //  in an actual test case
+    // Note that the first set is a subset of the second set, because every state first needs
+    // to be discovered before it can be covered in a test case
     private HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>> targetPaths = new HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>>();
 
     // Used to check feasibility of target paths
@@ -63,9 +65,15 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     // Used to generate any new target paths encountered
     PathGenerator pathGenerator;
     int maxDepth;
+    // Order in which target paths are explored
     SearchOrder pathExploration = SearchOrder.DFS;
+    // Order in which states containing paths are finished towards a terminal state
     SearchOrder pathFinishing = SearchOrder.BFS;
+    // Order in which the beginning of target paths are found
     SearchOrder pathFinding = SearchOrder.BFS;
+    // Whether or not paths are checked for feasibiltiy in isolation before being added as targets
+    // This can save some time because infeasible paths can be pruned away early,
+    // but it can also be expensive enough that the total running time actually increases
     boolean feasibilityChecking = true;
 
     public PathStrategy(PathGenerator pathGenerator, int maxDepth, List<String> args) {
@@ -244,6 +252,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         }
     }
 
+    /** Get a list of all the first stmts of all target paths */
     private List<Stmt> getUndiscoveredFirstStmts() {
         // Accumulate first statements of all target paths
         ArrayList<Stmt> undiscoveredFirstStmts = new ArrayList<Stmt>();
@@ -356,6 +365,8 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
         return null;
     }
 
+    /** Returns and removes a random target from the provided list, weighted by
+     * the provided weightfunction */
     static <T extends SearchTarget> T nextStateHeuristic(Function<T, Double> weightFunction, LinkedList<T> targets) {
         double weights[] = new double[targets.size()];
         double totalWeight = 0;
