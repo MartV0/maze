@@ -396,7 +396,17 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
 
     @Override
     public Collection<T> getAll() {
-        return targets;
+        LinkedList<T> containingTargets = new LinkedList<>();
+        LinkedList<T> notContainingTargets = new LinkedList<>();
+        for (T target: targets) {
+            if (stateContainsTargetPath(target)) {
+                containingTargets.add(target);
+            } else {
+                notContainingTargets.add(target);
+            }
+        }
+        containingTargets.addAll(notContainingTargets);
+        return containingTargets;
     }
 
     /** Returns true if no more target paths are present */
