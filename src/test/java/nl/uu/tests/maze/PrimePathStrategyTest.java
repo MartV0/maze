@@ -19,6 +19,8 @@ import nl.uu.maze.execution.DSEController;
 import nl.uu.maze.search.strategy.PathStrategy;
 import nl.uu.maze.main.cli.MazeCLI;
 import nl.uu.maze.util.Z3ContextProvider;
+import nl.uu.maze.benchmarks.BinarySearch;
+import nl.uu.maze.examples.SimpleLoop;
 import picocli.CommandLine;
 
 /**
@@ -26,49 +28,11 @@ import picocli.CommandLine;
  * and special values like NaN and infinity.
  */
 public class PrimePathStrategyTest {
-	
-	static public class CUT_SimpleLoop {
-		public static int func_with_loop(int max) {
-			int r = 0;
-
-			for (int i = 0; i < max; i++) {
-				if (i % 2 == 0) {
-					r += i;
-				} else {
-					r++;
-				}
-			}
-
-			return r;
-		}
-	}
-
-	static public class CUT_BinarySearch {
-		/** Returns the index of the target in the sorted array. */
-		public static int binarySearch(int[] arr, int target) {
-			int low = 0, high = arr.length - 1;
-
-			while (low <= high) {
-				int mid = low + ((high - low) >>> 1);
-				if (arr[mid] == target) {
-					return mid;
-				} else if (arr[mid] < target) {
-					low = mid + 1;
-				} else {
-					high = mid - 1;
-				}
-			}
-
-			return -1; // Target not found
-		}
-	}
-	
-	String binClassesDir = "./target/test-classes" ;
+	String binClassesDir = "./target/classes" ;
 	String outputDir = "./tmp" ;
 	
-	@SuppressWarnings("rawtypes")
-	Class CUT     = CUT_SimpleLoop.class ;
-	Class CUT2     = CUT_BinarySearch.class ;
+	String CUT = "nl.uu.maze.examples.SimpleLoop";
+	String CUT2 = "nl.uu.maze.benchmarks.BinarySearch";
 	String sp = " " ;
 	
 	LoggerInterceptor interceptor ;
@@ -87,8 +51,13 @@ public class PrimePathStrategyTest {
 		logger.addAppender(interceptor);
 
 		// remove the output-test-file produced by MAZE:
-		TestUtils.removeFile(Path.of(outputDir, CUT.getSimpleName() + "Test.java"));
-		TestUtils.removeFile(Path.of(outputDir, CUT2.getSimpleName() + "Test.java"));
+		TestUtils.removeFile(Path.of(outputDir, simpleName(CUT) + "Test.java"));
+		TestUtils.removeFile(Path.of(outputDir, simpleName(CUT2) + "Test.java"));
+	}
+
+	String simpleName(String cut) {
+		String[] split = cut.split("\\.");
+		return split[split.length - 1];
 	}
 	
 	//@AfterAll  
@@ -101,7 +70,7 @@ public class PrimePathStrategyTest {
 	void simple_loop_covered() throws IOException {
 
 		String argz =   "--classpath=" + binClassesDir
-				      + sp + "--classname=" + CUT.getName() 
+				      + sp + "--classname=" + CUT
 				      + sp + "--output-path=" + outputDir 
 				      + sp + "--do-not-close-z3-context=true" // don't close z3 context, or else the next tests will crash
 				      + sp + "--strategy=PrimePath"
@@ -156,7 +125,7 @@ public class PrimePathStrategyTest {
 	void bin_search_covered() throws IOException {
 
 		String argz =   "--classpath=" + binClassesDir
-				      + sp + "--classname=" + CUT2.getName() 
+				      + sp + "--classname=" + CUT2
 				      + sp + "--output-path=" + outputDir 
 				      + sp + "--do-not-close-z3-context=true" // don't close z3 context, or else the next tests will crash
 				      + sp + "--strategy=PrimePath"
