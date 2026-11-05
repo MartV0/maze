@@ -3,7 +3,7 @@ package nl.uu.maze.util;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -16,14 +16,14 @@ public class PrefixTree<T> {
     private final static Logger logger = LoggerFactory.getLogger(BranchHistory.class);
 
     private class TrieNode {
-        HashMap<T, TrieNode> children;
+        IdentityHashMap<T, TrieNode> children;
         private List<T> content;
         
         // Indicates if the list up to this node is a full string in the original input
         private boolean isList = false;
 
         public TrieNode () {
-            children = new HashMap<T, TrieNode>();
+            children = new IdentityHashMap<T, TrieNode>();
         }
 
         public int size() {

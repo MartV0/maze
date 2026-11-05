@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import java.util.function.Function;
@@ -58,7 +58,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     //  in an actual test case
     // Note that the first set is a subset of the second set, because every state first needs
     // to be discovered before it can be covered in a test case
-    private HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>> targetPaths = new HashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>>();
+    private IdentityHashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>> targetPaths = new IdentityHashMap<StmtGraph<?>, Pair<PrefixTree<Stmt>, PrefixTree<Stmt>>>();
 
     // Used to check feasibility of target paths
     SymbolicExecutor symbolicExecutor;

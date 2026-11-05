@@ -9,7 +9,7 @@ import nl.uu.maze.util.BranchHistory;
 import nl.uu.maze.execution.symbolic.SymbolicState;
 import nl.uu.maze.search.strategy.PathStrategy;
 import Jama.Matrix;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.common.stmt.Stmt;
 import nl.uu.maze.util.Pair;
@@ -29,7 +29,7 @@ public class BasisPathStrategy<T extends SearchTarget> extends SearchStrategy<T>
 
     private final LinkedList<T> targets = new LinkedList<>();
 
-    private HashMap<StmtGraph<?>, BasisSet> basisSets = new HashMap<StmtGraph<?>, BasisSet>();
+    private IdentityHashMap<StmtGraph<?>, BasisSet> basisSets = new IdentityHashMap<StmtGraph<?>, BasisSet>();
 
     int maxDepth;
 
