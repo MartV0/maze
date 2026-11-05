@@ -61,6 +61,19 @@ public class PrefixTree<T> {
         current.content = input;
     }
 
+    /** Returns true if input is a strict prefix of an existing list */
+    public boolean isStrictPrefix(List<T> input) {
+        TrieNode current = root;
+        for (T l: input) {
+            var next_node = current.children.get(l);
+            if (next_node == null) {
+                return false;
+            }
+            current = next_node;
+        }
+        return current.children.size() != 0;
+    }
+
     /** Attempts to remove input from tree
       * returns true if the input was present in the tree, false otherwise */
     public boolean remove(List<T> input) {
