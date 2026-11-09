@@ -66,15 +66,15 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
     PathGenerator pathGenerator;
     int maxDepth;
     // Order in which target paths are explored
-    SearchOrder pathExploration = SearchOrder.DFS;
+    SearchOrder pathExploration = SearchOrder.BFS;
     // Order in which states containing paths are finished towards a terminal state
     SearchOrder pathFinishing = SearchOrder.BFS;
     // Order in which the beginning of target paths are found
-    SearchOrder pathFinding = SearchOrder.BFS;
+    SearchOrder pathFinding = SearchOrder.Heuristic;
     // Whether or not paths are checked for feasibiltiy in isolation before being added as targets
     // This can save some time because infeasible paths can be pruned away early,
     // but it can also be expensive enough that the total running time actually increases
-    boolean feasibilityChecking = true;
+    boolean feasibilityChecking = false;
 
     public PathStrategy(PathGenerator pathGenerator, int maxDepth, List<String> args) {
         this.pathGenerator = pathGenerator;
@@ -83,9 +83,7 @@ public class PathStrategy<T extends SearchTarget> extends SearchStrategy<T> {
             this.pathExploration = stringToOrder(args.get(0));
             this.pathFinishing = stringToOrder(args.get(1));
             this.pathFinding = stringToOrder(args.get(2));
-            if (args.size() >= 4 && (args.get(3).equals("f"))) {
-                feasibilityChecking = false;
-            }
+            feasibilityChecking = !(args.size() >= 4 && args.get(3).toLowerCase().equals("f"));
         }
         logger.debug("pathExploration:{}", pathExploration);
         logger.debug("pathFinishing:{}", pathFinishing);
