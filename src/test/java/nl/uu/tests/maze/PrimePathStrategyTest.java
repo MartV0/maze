@@ -74,6 +74,7 @@ public class PrimePathStrategyTest {
 				      + sp + "--output-path=" + outputDir 
 				      + sp + "--do-not-close-z3-context=true" // don't close z3 context, or else the next tests will crash
 				      + sp + "--strategy=PrimePath"
+				      + sp + "-e=b,b,b,t"
 				      + sp + "--log-level=DEBUG"
 				      ;
 	    int exitCode = new CommandLine(new MazeCLI()).execute(argz.split(" ") );
