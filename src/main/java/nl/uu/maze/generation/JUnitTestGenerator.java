@@ -336,10 +336,19 @@ public class JUnitTestGenerator {
                 if (isArray) {
                     //methodBuilder.addStatement("$T.assertArrayEquals(expected, retval)",
                     //        targetJUnit4 ? org.junit.Assert.class : Assertions.class);
-                    addStatementOrComment(methodBuilder, 
-                			EngineConfiguration.getInstance().surpressRegressionOracles,
-                			"$T.assertArrayEquals(expected, retval)",
-                			AssertClass) ;
+                    // For JUnit 4, assertEquals on float and double values requires a delta
+                    if (targetJUnit4 && (retval instanceof float[] || retval instanceof double[]
+                        || retval instanceof Float[] || retval instanceof Double[])) {
+                        addStatementOrComment(methodBuilder, 
+                                EngineConfiguration.getInstance().surpressRegressionOracles,
+                                "$T.assertArrayEquals(expected, retval, 0.0001)",
+                                AssertClass);
+                    } else {
+                        addStatementOrComment(methodBuilder, 
+                                EngineConfiguration.getInstance().surpressRegressionOracles,
+                                "$T.assertArrayEquals(expected, retval)",
+                                AssertClass);
+                    }
                 } else {
                     // For JUnit 4, assertEquals on float and double values requires a delta
                     if (targetJUnit4 && (retval instanceof Float || retval instanceof Double)) {
