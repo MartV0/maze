@@ -156,6 +156,7 @@ public class PrefixTree<T> {
 
     /** checks if any endings of the input are a prefix of any of the lists in the tree */
     public boolean containsPrefix(List<T> input) {
+        // TODO: this function is quite innefficient
         // Note: we use <= to also check for empty list
         for (int i = 0; i <= input.size(); i++) {
             if (contains(input, i, false, false)) {
